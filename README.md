@@ -160,10 +160,21 @@ The libraries in `libs/` are also published as their own repositories under
 [github.com/PlattySSH](https://github.com/PlattySSH); the main module uses them through
 `replace` directives.
 
+## 🖥️ Platform support
+
+| System | Status |
+|---|---|
+| Windows 10 (1809+) and 11, x64 | ✅ Supported |
+| macOS (Apple Silicon and Intel) | 🛠️ Planned, see [#1](https://github.com/PlattySSH/platty/issues/1) |
+| Linux (X11 and Wayland) | 🛠️ Planned, see [#2](https://github.com/PlattySSH/platty/issues/2) |
+
+The SSH layer, the terminal engine and the vault are portable Go; the issues list what's
+left for each system.
+
 ## ⚠️ Notice
 
-Platty is in early development and **only runs on Windows** for now. Segoe UI isn't
-bundled: it's loaded from the Windows fonts folder, and Geist is used when it's missing.
+Platty is in early development. Segoe UI isn't bundled: it's loaded from the Windows
+fonts folder, and Geist is used when it's missing.
 
 Released under the [MIT license](LICENSE). The embedded fonts (JetBrains Mono, Fira Code,
 Geist and Geist Mono) are under the SIL Open Font License 1.1, and the icons come from
