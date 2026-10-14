@@ -1,0 +1,407 @@
+package app
+
+import (
+	"fmt"
+	"image"
+	"os/exec"
+	"sync"
+	"sync/atomic"
+	"time"
+
+	gioapp "gioui.org/app"
+	"gioui.org/font"
+	"gioui.org/io/event"
+	"gioui.org/io/key"
+	"gioui.org/io/system"
+	"gioui.org/layout"
+	"gioui.org/op"
+	"gioui.org/text"
+	"gioui.org/unit"
+	"gioui.org/x/explorer"
+	"github.com/plattyssh/glyphs"
+
+	"github.com/plattyssh/platty/internal/app/core"
+	"github.com/plattyssh/platty/internal/app/dialogs"
+	"github.com/plattyssh/platty/internal/app/hosts"
+	"github.com/plattyssh/platty/internal/app/onboarding"
+	"github.com/plattyssh/platty/internal/app/palette"
+	"github.com/plattyssh/platty/internal/app/settings"
+	"github.com/plattyssh/platty/internal/app/welcome"
+	"github.com/plattyssh/platty/internal/config"
+	"github.com/plattyssh/platty/internal/fonts"
+	"github.com/plattyssh/platty/internal/platform/dragdrop"
+	"github.com/plattyssh/platty/internal/platform/shell"
+	"github.com/plattyssh/platty/internal/session"
+	"github.com/plattyssh/platty/internal/transfer"
+	"github.com/plattyssh/platty/internal/tunnel"
+	"github.com/plattyssh/platty/internal/ui/kit"
+	"github.com/plattyssh/platty/internal/ui/theme"
+	"github.com/plattyssh/platty/internal/ui/toast"
+	"github.com/plattyssh/platty/internal/vault"
+)
+
+type (
+	C = layout.Context
+	D = layout.Dimensions
+)
+
+const (
+	appName      = "Platty"
+	windowWidth  = 1280
+	windowHeight = 800
+	minWidth     = 640
+	minHeight    = 420
+)
+
+type App struct {
+	win      *gioapp.Window
+	explorer *explorer.Explorer
+	kit      *kit.Kit
+	shaper   *text.Shaper
+	face     font.Font
+	glyphs   *glyphs.Set
+
+	settings config.Settings
+	vault    *vault.Vault
+	profiles []shell.Profile
+
+	ws        workspace
+	tools     tools
+	chrome    chrome
+	welcome   *welcome.Screen
+	palette   *palette.Palette
+	toasts    toast.Stack
+	tunnels   *tunnel.Manager
+	transfers *transfer.Queue
+
+	modal    core.Modal
+	docked   [2]core.Modal
+	prompts  promptQueue
+	passes   passphrases
+	lock     lockScreen
+	started  time.Time
+	restored bool
+	drops    chan []string
+	clips    chan string
+
+	maximized bool
+	closing   bool
+	autoTrust bool
+	vaultRev  uint64
+	mu        sync.Mutex
+}
+
+func Run() error {
+	v, err := vault.Open()
+
+	if err != nil {
+		return err
+	}
+
+	a := &App{
+		win:      new(gioapp.Window),
+		settings: config.Load(),
+		vault:    v,
+		profiles: shell.Detect(),
+		drops:    make(chan []string, 8),
+		clips:    make(chan string, 4),
+	}
+	a.shaper, a.face = fonts.Load()
+	a.glyphs, _ = fonts.Glyphs(a.settings.TerminalFont)
+	a.kit = kit.New(theme.New(a.settings.Theme), a.shaper)
+	a.explorer = explorer.NewExplorer(a.win)
+	a.tunnels = a.newTunnels()
+	a.transfers = transfer.New(a.Invalidate)
+	a.tools.init(a)
+	a.started = time.Now()
+	a.welcome = welcome.New(a)
+	a.palette = palette.New(a.kit, a.paletteEntries, a.paletteQuick, a.ws.focusActive)
+	a.welcome.Art.OnRun(a.runTyped)
+
+	if !a.settings.Onboarded {
+		a.Open(onboarding.New(a))
+	}
+
+	a.toasts.OnChange(a.Invalidate)
+
+	a.win.Option(
+		gioapp.Title(appName),
+		gioapp.Size(unit.Dp(windowWidth), unit.Dp(windowHeight)),
+		gioapp.MinSize(unit.Dp(minWidth), unit.Dp(minHeight)),
+		gioapp.Decorated(false),
+	)
+
+	return a.loop()
+}
+
+func (a *App) loop() error {
+	var ops op.Ops
+
+	for {
+		ev := a.win.Event()
+		a.explorer.ListenEvents(ev)
+
+		switch e := ev.(type) {
+		case gioapp.DestroyEvent:
+			a.shutdown()
+			return e.Err
+		case *gioapp.ClosingEvent:
+			if a.confirmClose() {
+				e.Abort()
+			}
+		case gioapp.ConfigEvent:
+			a.maximized = e.Config.Mode == gioapp.Maximized
+		case gioapp.Win32ViewEvent:
+			if hwnd := e.HWND; hwnd != 0 {
+				go a.win.Run(func() { dragdrop.Enable(hwnd, a.dropFiles) })
+			}
+		case gioapp.FrameEvent:
+			gtx := gioapp.NewContext(&ops, e)
+			a.frame(gtx)
+			e.Frame(gtx.Ops)
+		}
+	}
+}
+
+func (a *App) confirmClose() bool {
+	if a.closing || !a.settings.ConfirmClose {
+		return false
+	}
+
+	ssh := 0
+
+	for _, t := range a.ws.tabs {
+		for _, p := range t.root.panes(nil) {
+			if st, _ := p.sess.State(); p.sess.Kind == session.SSH && st == session.Connected {
+				ssh++
+			}
+		}
+	}
+
+	tunnels := a.tunnels.Active()
+
+	if ssh == 0 && tunnels == 0 {
+		return false
+	}
+
+	msg := fmt.Sprintf("There are %d SSH sessions and %d active tunnels. All of them will be closed.", ssh, tunnels)
+	a.Open(dialogs.NewConfirm(a.kit, "Quit Platty?", msg, "Quit", func() {
+		a.closing = true
+		a.win.Perform(system.ActionClose)
+	}))
+	a.Invalidate()
+	return true
+}
+
+func (a *App) shutdown() {
+	a.saveTabs()
+	a.ws.closeAll()
+	a.tunnels.StopAll()
+	config.Save(a.settings)
+}
+
+func (a *App) Invalidate() {
+	a.win.Invalidate()
+}
+
+func (a *App) th() *theme.Theme {
+	return a.kit.Th
+}
+
+var Frames atomic.Int64
+
+func (a *App) frame(gtx C) {
+	Frames.Add(1)
+
+	if a.vault.Locked() {
+		a.ws.reap(a)
+		gtx.Constraints.Min = gtx.Constraints.Max
+		a.kit.ReadPointer(gtx)
+		a.lockLayout(gtx)
+		a.toasts.Layout(gtx, a.kit)
+		a.kit.TrackPointer(gtx)
+		return
+	}
+
+	select {
+	case paths := <-a.drops:
+		a.handleDrop(paths)
+	default:
+	}
+
+	a.handleShortcuts(gtx)
+	a.ws.reap(a)
+	a.applyServerCopies(gtx)
+	a.restoreTabs()
+
+	if rev := a.vault.Revision(); rev != a.vaultRev {
+		a.vaultRev = rev
+		a.tools.refresh(a)
+	}
+
+	gtx.Constraints.Min = gtx.Constraints.Max
+	a.kit.ReadPointer(gtx)
+	a.kit.Redact = a.redactor()
+	a.chrome.shell(a, gtx)
+
+	a.toasts.Layout(gtx, a.kit)
+
+	if a.palette.IsOpen() {
+		a.palette.Layout(gtx)
+	}
+
+	a.layoutModal(gtx)
+	a.idleLock(gtx)
+	a.kit.TrackPointer(gtx)
+}
+
+func (a *App) layoutModal(gtx C) {
+	if a.modal == nil {
+		if p := a.prompts.peek(); p != nil {
+			a.modal = p
+		}
+	}
+
+	if a.modal == nil {
+		return
+	}
+
+	if a.modal.Layout(gtx) {
+		a.modal = nil
+		a.ws.focusActive()
+	}
+}
+
+func (a *App) Open(m core.Modal) {
+	a.palette.Close()
+	a.modal = m
+}
+
+func shortcutFilters() []event.Filter {
+	cs := key.ModCtrl | key.ModShift
+	return []event.Filter{
+		key.Filter{Name: "P", Required: cs},
+		key.Filter{Name: "T", Required: cs},
+		key.Filter{Name: "W", Required: cs},
+		key.Filter{Name: "D", Required: cs},
+		key.Filter{Name: "E", Required: cs},
+		key.Filter{Name: "N", Required: cs},
+		key.Filter{Name: "L", Required: cs},
+		key.Filter{Name: key.NameTab, Required: key.ModCtrl, Optional: key.ModShift},
+		key.Filter{Name: key.NamePageDown, Required: key.ModCtrl},
+		key.Filter{Name: key.NamePageUp, Required: key.ModCtrl},
+		key.Filter{Name: "1", Required: key.ModAlt},
+		key.Filter{Name: "2", Required: key.ModAlt},
+		key.Filter{Name: "3", Required: key.ModAlt},
+		key.Filter{Name: "4", Required: key.ModAlt},
+		key.Filter{Name: "5", Required: key.ModAlt},
+		key.Filter{Name: "6", Required: key.ModAlt},
+		key.Filter{Name: key.NameLeftArrow, Required: key.ModAlt},
+		key.Filter{Name: key.NameRightArrow, Required: key.ModAlt},
+		key.Filter{Name: key.NameUpArrow, Required: key.ModAlt},
+		key.Filter{Name: key.NameDownArrow, Required: key.ModAlt},
+		key.Filter{Name: ",", Required: key.ModCtrl},
+		key.Filter{Name: "S", Required: key.ModCtrl | key.ModAlt},
+	}
+}
+
+func (a *App) handleShortcuts(gtx C) {
+	for {
+		ev, ok := gtx.Event(shortcutFilters()...)
+
+		if !ok {
+			return
+		}
+
+		e, ok := ev.(key.Event)
+
+		if !ok {
+			continue
+		}
+
+		if e.State != key.Press || a.modal != nil {
+			continue
+		}
+
+		a.shortcut(e)
+	}
+}
+
+func (a *App) shortcut(e key.Event) {
+	shift := e.Modifiers.Contain(key.ModShift)
+
+	switch e.Name {
+	case "P":
+		a.palette.Show()
+	case "T":
+		a.NewLocalTab(a.DefaultProfile())
+	case "W":
+		a.ws.closeActivePane(a)
+	case "D":
+		a.ws.split(a, true)
+	case "E":
+		a.ws.split(a, false)
+	case "N":
+		a.OpenDocked(core.Right, hosts.NewEditor(a, vault.Host{}))
+	case "L":
+		a.LockVault()
+	case key.NameTab:
+		if shift {
+			a.ws.cycle(-1)
+		} else {
+			a.ws.cycle(1)
+		}
+	case key.NamePageDown:
+		a.ws.cycle(1)
+	case key.NamePageUp:
+		a.ws.cycle(-1)
+	case "1", "2", "3", "4", "5", "6":
+		a.tools.toggleIndex(a, int(e.Name[0]-'1'))
+	case key.NameLeftArrow:
+		a.ws.moveFocus(-1, 0)
+	case key.NameRightArrow:
+		a.ws.moveFocus(1, 0)
+	case key.NameUpArrow:
+		a.ws.moveFocus(0, -1)
+	case key.NameDownArrow:
+		a.ws.moveFocus(0, 1)
+	case ",", "S":
+		a.Open(settings.New(a))
+	}
+}
+
+func (a *App) nextTheme() {
+	for i, n := range theme.Names {
+		if n == a.settings.Theme {
+			a.SetTheme(theme.Names[(i+1)%len(theme.Names)])
+			return
+		}
+	}
+
+	a.SetTheme(theme.Carbon)
+}
+
+func (a *App) SetTheme(name string) {
+	a.settings.Theme = name
+	a.kit.SetTheme(theme.New(name))
+	a.ws.applyTheme(a)
+	config.Save(a.settings)
+}
+
+func (a *App) applySettings() {
+	if g, err := fonts.Glyphs(a.settings.TerminalFont); err == nil {
+		a.glyphs = g
+	}
+
+	a.ws.applySettings(a)
+	config.Save(a.settings)
+}
+
+func openURL(url string) {
+	exec.Command("rundll32", "url.dll,FileProtocolHandler", url).Start()
+}
+
+func moveArea(gtx C, size image.Point) {
+	defer clipRect(gtx, size).Pop()
+	system.ActionInputOp(system.ActionMove).Add(gtx.Ops)
+}
