@@ -8,8 +8,8 @@
 
 No Electron, no web view: Platty is written in Go and draws its whole interface on
 the GPU with [Gio](https://gioui.org). It brings a **Termius-style host manager**, a
-**terminal emulator of its own** and the everyday SSH tools — **keys, tunnels, SFTP and
-snippets** — into one calm, monochrome window.
+**terminal emulator of its own** and the everyday SSH tools (**keys, tunnels, SFTP and
+snippets**) into one calm, monochrome window.
 
 </div>
 
@@ -53,7 +53,7 @@ snippets** — into one calm, monochrome window.
   Key passphrases are only kept for the session unless you ask Platty to remember them.
 - **Export and import**: a `.platty` file encrypted with a password of your choice, where
   you pick what goes in (secrets stay out by default), plus export to `~/.ssh/config`.
-- **Monochrome themes** — Carbon, Graphite, Midnight and Paper — and an option to hide
+- **Monochrome themes** (Carbon, Graphite, Midnight and Paper) and an option to hide
   IP addresses on screen.
 
 | | |
@@ -97,19 +97,9 @@ Settings, the vault and the crash log are kept in `%AppData%\Platty`.
 ### Development
 
 ```sh
-go test ./...                                  # app tests, with an in-memory SSH server
-(cd libs/vt && go test ./...)                  # each library is tested in its own module
-go test ./internal/ui/termview -bench .        # rendering benchmarks (headless GPU)
 go run ./cmd/platty-preview -o docs/screens    # regenerate the screenshots
-go run ./tools/tidy                            # format the code (see below)
 ./packaging/build.ps1 -Version 0.1.0          # portable zip in dist/ (add -Installer for the setup)
 ```
-
-`tools/tidy` keeps the code in the project's style: imports in three groups (standard
-library, external, this module), a blank line around every `if`, `for`, `switch` and
-`select`, and between declarations. `-n` only lists what would change, and
-`-strip-comments` also removes comments (except `//go:build`, `//go:embed`...).
-Generated code is left alone.
 
 Run with `PLATTY_DIAG=<folder>` to write the frame rate, memory stats and CPU/heap
 profiles to that folder every few seconds.
@@ -132,10 +122,10 @@ profiles to that folder every few seconds.
 
 ## 📚 Documentation
 
-- [Website](https://plattyssh.github.io) — the landing page and documentation.
-- [Changelog](CHANGELOG.md) — what changed in each version.
-- [Sol, the mascot](assets/mascot/README.md) — the logo and how its files are exported.
-- [Third-party notices](THIRD_PARTY_NOTICES.md) — icon and font licenses.
+- [Website](https://plattyssh.github.io): the landing page and documentation.
+- [Changelog](CHANGELOG.md): what changed in each version.
+- [Sol, the mascot](assets/mascot/README.md): the logo and how its files are exported.
+- [Third-party notices](THIRD_PARTY_NOTICES.md): icon and font licenses.
 
 ## 📂 Structure
 
@@ -161,14 +151,14 @@ platty/
 │   ├── vt/                # terminal emulator (parser/, input/)
 │   ├── conpty/            # Windows pseudo-consoles
 │   └── glyphs/            # glyph rasterizer
-├── tools/tidy/            # code formatter
 ├── packaging/             # release script and installer
 ├── assets/mascot/         # Sol, the logo
 └── docs/                  # screenshots
 ```
 
-The libraries in `libs/` are wired into the main module with `replace` directives until
-they're published under [github.com/PlattySSH](https://github.com/PlattySSH).
+The libraries in `libs/` are also published as their own repositories under
+[github.com/PlattySSH](https://github.com/PlattySSH); the main module uses them through
+`replace` directives.
 
 ## ⚠️ Notice
 

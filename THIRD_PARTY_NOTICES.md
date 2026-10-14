@@ -34,8 +34,8 @@ SOFTWARE.
 
 Embedded in `internal/fonts/data/` under the SIL Open Font License 1.1; each font ships with its license text next to it:
 
-- JetBrains Mono — `OFL-JetBrainsMono.txt`
-- Fira Code — `OFL-FiraCode.txt`
-- Geist and Geist Mono — `OFL-Geist.txt`, `OFL-GeistMono.txt`
+- JetBrains Mono: `OFL-JetBrainsMono.txt`
+- Fira Code: `OFL-FiraCode.txt`
+- Geist and Geist Mono: `OFL-Geist.txt`, `OFL-GeistMono.txt`
 
 `libs/glyphs/testdata/` includes JetBrains Mono for tests, with `OFL-JetBrainsMono.txt`.
