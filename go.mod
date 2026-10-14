@@ -5,7 +5,7 @@ go 1.26.5
 require (
 	gioui.org v0.10.3
 	gioui.org/x v0.10.3
-	github.com/go-text/typesetting v0.3.5 // indirect
+	github.com/go-text/typesetting v0.3.5
 	github.com/pkg/sftp v1.13.11
 	github.com/rivo/uniseg v0.4.7 // indirect
 	golang.org/x/crypto v0.57.0
