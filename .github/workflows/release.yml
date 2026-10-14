@@ -29,11 +29,11 @@ jobs:
         shell: bash
         run: |
           awk -v v="## $VERSION" 'index($0, v) == 1 { on = 1; next } on && /^## / { exit } on' CHANGELOG.md > dist/notes.md
-          cat >> dist/notes.md <<'NOTES'
+          cat >> dist/notes.md <<NOTES
 
           ### Install
-          - **platty-*-setup.exe** installs Platty for your user, without administrator rights.
-          - **platty-*-windows-amd64.zip** is the portable version: unzip it and run `platty.exe`.
+          - **platty-$VERSION-setup.exe** installs Platty for your user, without administrator rights.
+          - **platty-$VERSION-windows-amd64.zip** is the portable version: unzip it and run `platty.exe`.
 
           Beta builds aren't code-signed yet. If SmartScreen stops the download or the first launch, choose *More info* and then *Run anyway*.
           NOTES
