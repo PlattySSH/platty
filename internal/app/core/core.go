@@ -1,0 +1,88 @@
+package core
+
+import (
+	"gioui.org/layout"
+	"gioui.org/x/explorer"
+
+	"github.com/plattyssh/platty/internal/config"
+	"github.com/plattyssh/platty/internal/platform/shell"
+	"github.com/plattyssh/platty/internal/session"
+	"github.com/plattyssh/platty/internal/transfer"
+	"github.com/plattyssh/platty/internal/tunnel"
+	"github.com/plattyssh/platty/internal/ui/icons"
+	"github.com/plattyssh/platty/internal/ui/kit"
+	"github.com/plattyssh/platty/internal/ui/toast"
+	"github.com/plattyssh/platty/internal/vault"
+)
+
+type (
+	C = layout.Context
+	D = layout.Dimensions
+)
+
+type Side int
+
+const (
+	Left Side = iota
+	Right
+)
+
+type Modal interface {
+	Layout(gtx C) bool
+}
+
+type Docker interface {
+	Dialog() *kit.Dialog
+}
+
+type Tool interface {
+	Title() string
+	Icon() *icons.Icon
+	Side() Side
+	Shortcut() string
+	Actions(gtx C) D
+	Body(gtx C) D
+	Refresh()
+}
+
+type Host interface {
+	Kit() *kit.Kit
+	Vault() *vault.Vault
+	Toasts() *toast.Stack
+	Explorer() *explorer.Explorer
+	Tunnels() *tunnel.Manager
+	Transfers() *transfer.Queue
+	Invalidate()
+	TitleBar(gtx C) D
+
+	Settings() config.Settings
+	UpdateSettings(s config.Settings)
+	SetTheme(name string)
+	Profiles() []shell.Profile
+	DefaultProfile() shell.Profile
+
+	Open(m Modal)
+	OpenDocked(s Side, m Modal)
+	OpenIn(t Tool, m Modal)
+	CloseDocked(s Side)
+	ShowTool(t Tool)
+	ShowPalette()
+	AskPassword(title, message string) (string, bool)
+	AskKeyPassphrase(message string) (pass string, remember bool, ok bool)
+	RememberPassphrase(keyID, pass string)
+	LockVault()
+	ExportData()
+	ImportData()
+	ExportSSHConfig()
+	DragOut(paths []string)
+	OpenURL(url string)
+
+	Connect(h vault.Host)
+	ConnectSplit(h vault.Host)
+	OpenSFTP(h vault.Host)
+	QuickConnect(target string) bool
+	NewLocalTab(p shell.Profile)
+	ImportSSHConfig()
+	RunSnippet(s vault.Snippet, execute bool)
+	ActiveSession() *session.Session
+}
