@@ -17,7 +17,6 @@ import (
 	"gioui.org/unit"
 
 	platty "github.com/plattyssh/platty/internal/app"
-	"github.com/plattyssh/platty/internal/sshx/sshtest"
 	"github.com/plattyssh/platty/internal/vault"
 )
 
@@ -147,7 +146,7 @@ func run(out string, width, height int, only string) error {
 		return err
 	}
 
-	addr, stop, err := sshtest.ListenDemo()
+	addr, stop, err := listenDemo()
 
 	if err != nil {
 		return err
@@ -157,8 +156,8 @@ func run(out string, width, height int, only string) error {
 
 	h, port, _ := net.SplitHostPort(addr)
 	pn, _ := strconv.Atoi(port)
-	testHost, _ = v.SaveHost(vault.Host{Label: "demo-server", Address: h, Port: pn, Username: sshtest.User,
-		Auth: vault.AuthPassword, Password: sshtest.Password, Group: "Staging", Color: 2})
+	testHost, _ = v.SaveHost(vault.Host{Label: "demo-server", Address: h, Port: pn, Username: demoUser,
+		Auth: vault.AuthPassword, Password: demoPassword, Group: "Staging", Color: 2})
 	v.SaveForward(vault.Forward{Label: "Postgres prod", HostID: testHost.ID, Kind: vault.ForwardLocal, BindPort: 15432, DestHost: "localhost", DestPort: 5432})
 	v.SaveForward(vault.Forward{Label: "Proxy SOCKS", HostID: testHost.ID, Kind: vault.ForwardDynamic, BindPort: 1080})
 

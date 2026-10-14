@@ -1,63 +1,37 @@
-package sshtest
+package main
 
 import (
-	"bytes"
 	"crypto/ed25519"
 	"crypto/rand"
 	"fmt"
 	"io"
 	"net"
 	"strconv"
-	"testing"
 
 	"github.com/pkg/sftp"
 	"golang.org/x/crypto/ssh"
 )
 
 const (
-	User     = "platty"
-	Password = "hunter2"
+	demoUser     = "platty"
+	demoPassword = "hunter2"
 )
 
-func Server(t testing.TB, authorized ssh.PublicKey) string {
-	t.Helper()
-
-	addr, stop, err := Listen(authorized)
-
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	t.Cleanup(stop)
-	return addr
+func listenDemo() (addr string, stop func(), err error) {
+	return listen(demoFS())
 }
 
-func Listen(authorized ssh.PublicKey) (addr string, stop func(), err error) {
-	return listen(authorized, nil)
-}
-
-func ListenDemo() (addr string, stop func(), err error) {
-	return listen(nil, demoFS())
-}
-
-func listen(authorized ssh.PublicKey, mem *sftp.Handlers) (addr string, stop func(), err error) {
+func listen(mem *sftp.Handlers) (addr string, stop func(), err error) {
 	_, hostPriv, _ := ed25519.GenerateKey(rand.Reader)
 	hostSigner, _ := ssh.NewSignerFromKey(hostPriv)
 
 	cfg := &ssh.ServerConfig{
 		PasswordCallback: func(c ssh.ConnMetadata, pass []byte) (*ssh.Permissions, error) {
-			if c.User() == User && string(pass) == Password {
+			if c.User() == demoUser && string(pass) == demoPassword {
 				return nil, nil
 			}
 
 			return nil, fmt.Errorf("wrong password")
-		},
-		PublicKeyCallback: func(c ssh.ConnMetadata, key ssh.PublicKey) (*ssh.Permissions, error) {
-			if authorized != nil && bytes.Equal(key.Marshal(), authorized.Marshal()) {
-				return nil, nil
-			}
-
-			return nil, fmt.Errorf("key not authorized")
 		},
 	}
 	cfg.AddHostKey(hostSigner)
