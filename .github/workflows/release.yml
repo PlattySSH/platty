@@ -33,7 +33,7 @@ jobs:
 
           ### Install
           - **platty-$VERSION-setup.exe** installs Platty for your user, without administrator rights.
-          - **platty-$VERSION-windows-amd64.zip** is the portable version: unzip it and run `platty.exe`.
+          - **platty-$VERSION-windows-amd64.zip** is the portable version: unzip it and run \`platty.exe\`.
 
           Beta builds aren't code-signed yet. If SmartScreen stops the download or the first launch, choose *More info* and then *Run anyway*.
           NOTES
