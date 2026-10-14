@@ -1,0 +1,32 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Vet
+        run: go vet ./...
+
+      - name: Test
+        run: go test ./...
+
+      - name: Test libraries
+        shell: bash
+        run: |
+          for dir in libs/*/; do
+            (cd "$dir" && go vet ./... && go test ./...)
+          done
+
+      - name: Build
+        run: go build -ldflags "-H windowsgui" -o bin/platty.exe ./cmd/platty
