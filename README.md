@@ -1,0 +1,180 @@
+<div align="center">
+
+<img src="assets/mascot/sol-256.png" alt="Platty" width="140" />
+
+# Platty
+
+**A fast, native SSH client and terminal for Windows.**
+
+No Electron, no web view: Platty is written in Go and draws its whole interface on
+the GPU with [Gio](https://gioui.org). It brings a **Termius-style host manager**, a
+**terminal emulator of its own** and the everyday SSH tools — **keys, tunnels, SFTP and
+snippets** — into one calm, monochrome window.
+
+</div>
+
+---
+
+![Platty](docs/screens/terminal-carbon.png)
+
+## ✨ Features
+
+- **Terminal of its own** (`libs/vt`): 256 colors and truecolor, bold, italic and
+  underline styles, alternate screen, scrollback, wide (CJK) characters and **reflow on
+  resize**.
+- **Custom glyph rasterizer** with a cache: 0.04 ms per frame on a static screen and
+  under 6 ms for a full-screen redraw at 1080p, with **color emoji** (COLR v0/v1) and
+  system font fallback.
+- **Selection, copy and paste**, bracketed paste, **search in the scrollback**, Ctrl+click
+  links and mouse reporting for vim and htop.
+- **Tabs and split panes** that come back when you reopen Platty; rename, reorder, duplicate,
+  and type into every pane of a tab at once (broadcast). Local profiles: PowerShell, cmd,
+  WSL and Git Bash.
+- **Font ligatures** (JetBrains Mono, Fira Code), clickable OSC 8 links, OSC 52 copy and
+  OSC 7 working folder; **save a session to a log file** as plain text.
+- **Hosts in folders**: subfolders, drag and drop, tags, search and **`~/.ssh/config`
+  import**.
+- **Authentication** with a password, a key from the keychain or the Windows OpenSSH
+  agent, including keyboard-interactive; **jump hosts**, keep-alive and reconnect.
+- **Host key verification** (trust on first use) with a warning when a key changes.
+- **SSH certificates** attached to keys, **agent forwarding** and a **command to run on
+  connect** per host. Hardware keys (YubiKey, FIDO) work through the Windows OpenSSH agent.
+- **Keychain**: generate ed25519 keys (with a passphrase) or import existing ones.
+- **Port forwarding**: local (-L), remote (-R) and dynamic (SOCKS5), each with a switch.
+- **SFTP panel** with a **transfer queue** (progress, cancel, whole folders): drag files in
+  from Explorer or out to it, edit a remote file in your own editor and it uploads on save.
+- **Snippets**: saved commands you run in the active session with one click.
+- **Server metrics** for SSH sessions: CPU, memory, disk, network, load and uptime.
+- **Search Everywhere** (Ctrl+Shift+P): hosts, snippets, actions and quick connect.
+- **A short introduction** on first launch, with Sol: theme, terminal, master password and
+  importing your servers.
+- **Encrypted vault** (XChaCha20-Poly1305): opens with your Windows user, an optional
+  **master password** (Argon2id), or both; **locks** on demand (Ctrl+Shift+L) or when idle.
+  Key passphrases are only kept for the session unless you ask Platty to remember them.
+- **Export and import**: a `.platty` file encrypted with a password of your choice, where
+  you pick what goes in (secrets stay out by default), plus export to `~/.ssh/config`.
+- **Monochrome themes** — Carbon, Graphite, Midnight and Paper — and an option to hide
+  IP addresses on screen.
+
+| | |
+|---|---|
+| ![Home](docs/screens/welcome-carbon.png) | ![Search Everywhere](docs/screens/palette-carbon.png) |
+| ![SSH + SFTP](docs/screens/ssh-sftp-carbon.png) | ![Host editor](docs/screens/host-editor-carbon.png) |
+| ![Settings](docs/screens/settings-carbon.png) | ![Keychain](docs/screens/keychain-graphite.png) |
+
+## 🧱 Tech stack
+
+| Layer | Technology |
+|-------|------------|
+| Language | Go 1.26 · no cgo |
+| UI | Gio 0.10 (Direct3D 11) · Phosphor icons · Segoe UI, Geist and JetBrains Mono |
+| Terminal | Own VT emulator (`libs/vt`) · ConPTY (`libs/conpty`) · own glyph rasterizer (`libs/glyphs`) |
+| SSH | golang.org/x/crypto/ssh · pkg/sftp |
+| Storage | XChaCha20-Poly1305 vault · key wrapped with DPAPI and/or Argon2id · JSON settings |
+
+## 🚀 Getting started
+
+### Download
+
+Grab the installer or the portable `.zip` from [Releases](https://github.com/PlattySSH/platty/releases).
+Platty needs **Windows 10 1809** or later. Beta builds aren't code-signed yet, so Windows may
+ask you to confirm before running them.
+
+### Build from source
+
+You need **Go 1.26+**.
+
+```sh
+# Build the app
+go build -ldflags "-H windowsgui" -o bin/platty.exe ./cmd/platty
+
+# Run it
+bin/platty.exe
+```
+
+Settings, the vault and the crash log are kept in `%AppData%\Platty`.
+
+### Development
+
+```sh
+go test ./...                                  # app tests, with an in-memory SSH server
+(cd libs/vt && go test ./...)                  # each library is tested in its own module
+go test ./internal/ui/termview -bench .        # rendering benchmarks (headless GPU)
+go run ./cmd/platty-preview -o docs/screens    # regenerate the screenshots
+go run ./tools/tidy                            # format the code (see below)
+./packaging/build.ps1 -Version 0.1.0          # portable zip in dist/ (add -Installer for the setup)
+```
+
+`tools/tidy` keeps the code in the project's style: imports in three groups (standard
+library, external, this module), a blank line around every `if`, `for`, `switch` and
+`select`, and between declarations. `-n` only lists what would change, and
+`-strip-comments` also removes comments (except `//go:build`, `//go:embed`...).
+Generated code is left alone.
+
+Run with `PLATTY_DIAG=<folder>` to write the frame rate, memory stats and CPU/heap
+profiles to that folder every few seconds.
+
+## ⌨️ Shortcuts
+
+| Action | Shortcut |
+|---|---|
+| Search everywhere | Ctrl+Shift+P |
+| New terminal / new host | Ctrl+Shift+T / Ctrl+Shift+N |
+| Split right / down | Ctrl+Shift+D / Ctrl+Shift+E |
+| Close pane | Ctrl+Shift+W |
+| Move focus between panes | Alt+Arrows |
+| Switch tab | Ctrl+Tab / Ctrl+Shift+Tab |
+| Sidebar / tool panels | Alt+1 / Alt+2 … Alt+6 |
+| Copy / paste | Ctrl+Shift+C (or Ctrl+C with a selection) / Ctrl+Shift+V |
+| Find in terminal | Ctrl+Shift+F |
+| Settings | Ctrl+Alt+S |
+| Lock Platty | Ctrl+Shift+L |
+
+## 📚 Documentation
+
+- [Website](https://plattyssh.github.io) — the landing page and documentation.
+- [Changelog](CHANGELOG.md) — what changed in each version.
+- [Sol, the mascot](assets/mascot/README.md) — the logo and how its files are exported.
+- [Third-party notices](THIRD_PARTY_NOTICES.md) — icon and font licenses.
+
+## 📂 Structure
+
+```
+platty/
+├── cmd/
+│   ├── platty/            # the app
+│   ├── platty-preview/    # renders screens to PNG without a window
+│   ├── platty-snap/       # renders a program's output with the terminal engine
+│   └── platty-mascot/     # exports Sol to PNG, GIF and ICO
+├── internal/
+│   ├── app/               # the window: sidebar, tabs, split panes and wiring
+│   │   ├── core/          # interfaces between the window and its parts
+│   │   ├── hosts/  keychain/  forwards/  snippets/  knownhosts/  sftp/
+│   │   └── settings/  palette/  welcome/  dialogs/
+│   ├── session/           # local and SSH sessions
+│   ├── sshx/              # SSH: auth, host keys, jump hosts, forwarding, SFTP, metrics
+│   ├── vault/             # encrypted storage
+│   ├── tunnel/  sshconfig/  config/  fonts/  format/  privacy/
+│   ├── platform/          # OS integration: local shells, file drop
+│   └── ui/                # theme, icons, component kit and widgets (termview, sol...)
+├── libs/                  # reusable libraries, each with its own go.mod
+│   ├── vt/                # terminal emulator (parser/, input/)
+│   ├── conpty/            # Windows pseudo-consoles
+│   └── glyphs/            # glyph rasterizer
+├── tools/tidy/            # code formatter
+├── packaging/             # release script and installer
+├── assets/mascot/         # Sol, the logo
+└── docs/                  # screenshots
+```
+
+The libraries in `libs/` are wired into the main module with `replace` directives until
+they're published under [github.com/PlattySSH](https://github.com/PlattySSH).
+
+## ⚠️ Notice
+
+Platty is in early development and **only runs on Windows** for now. Segoe UI isn't
+bundled: it's loaded from the Windows fonts folder, and Geist is used when it's missing.
+
+Released under the [MIT license](LICENSE). The embedded fonts (JetBrains Mono, Fira Code,
+Geist and Geist Mono) are under the SIL Open Font License 1.1, and the icons come from
+Phosphor (MIT).
