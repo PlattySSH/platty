@@ -1,0 +1,176 @@
+package config
+
+import (
+	"encoding/json"
+	"errors"
+	"io/fs"
+	"os"
+	"path/filepath"
+)
+
+const (
+	appDir       = "Platty"
+	settingsFile = "settings.json"
+)
+
+const (
+	CursorBlock     = "block"
+	CursorBar       = "bar"
+	CursorUnderline = "underline"
+)
+
+type Settings struct {
+	Theme         string  `json:"theme"`
+	FontSize      float32 `json:"fontSize"`
+	LineHeight    float32 `json:"lineHeight"`
+	CursorStyle   string  `json:"cursorStyle"`
+	CursorBlink   bool    `json:"cursorBlink"`
+	Scrollback    int     `json:"scrollback"`
+	CopyOnSelect  bool    `json:"copyOnSelect"`
+	Shell         string  `json:"shell"`
+	ConfirmClose  bool    `json:"confirmClose"`
+	HideAddresses bool    `json:"hideAddresses"`
+	TerminalFont  string  `json:"terminalFont"`
+	KeepAlive     int     `json:"keepAliveSeconds"`
+	LockAfter     int     `json:"lockAfterMinutes"`
+	SidebarWidth  float32 `json:"sidebarWidth"`
+	SidebarOpen   string  `json:"sidebarOpen"`
+	DesignVersion int     `json:"designVersion"`
+	Onboarded     bool    `json:"onboarded"`
+	RestoreTabs   bool    `json:"restoreTabs"`
+	Ligatures     bool    `json:"ligatures"`
+}
+
+const designVersion = 3
+
+var themes = map[string]struct{}{"carbon": {}, "graphite": {}, "midnight": {}, "paper": {}}
+
+func Defaults() Settings {
+	return Settings{
+		Theme:         "mono",
+		FontSize:      13,
+		LineHeight:    1.2,
+		CursorStyle:   CursorBlock,
+		CursorBlink:   true,
+		Scrollback:    10_000,
+		CopyOnSelect:  false,
+		ConfirmClose:  true,
+		KeepAlive:     30,
+		LockAfter:     15,
+		RestoreTabs:   true,
+		Ligatures:     true,
+		SidebarWidth:  280,
+		SidebarOpen:   "hosts",
+		DesignVersion: designVersion,
+	}
+}
+
+func Dir() (string, error) {
+	base, err := os.UserConfigDir()
+
+	if err != nil {
+		return "", err
+	}
+
+	dir := filepath.Join(base, appDir)
+
+	if err := os.MkdirAll(dir, 0o700); err != nil {
+		return "", err
+	}
+
+	return dir, nil
+}
+
+func Load() Settings {
+	s := Defaults()
+	dir, err := Dir()
+
+	if err != nil {
+		return s
+	}
+
+	b, err := os.ReadFile(filepath.Join(dir, settingsFile))
+
+	if err != nil {
+		return s
+	}
+
+	json.Unmarshal(b, &s)
+	return s.sanitized()
+}
+
+func Save(s Settings) error {
+	dir, err := Dir()
+
+	if err != nil {
+		return err
+	}
+
+	b, err := json.MarshalIndent(s, "", "  ")
+
+	if err != nil {
+		return err
+	}
+
+	return writeAtomic(filepath.Join(dir, settingsFile), b)
+}
+
+func (s Settings) sanitized() Settings {
+	d := Defaults()
+
+	if s.DesignVersion < designVersion {
+		if s.Theme == "light" {
+			s.Theme = "paper"
+		} else {
+			s.Theme = d.Theme
+		}
+
+		s.DesignVersion = designVersion
+	}
+
+	if _, ok := themes[s.Theme]; !ok {
+		s.Theme = d.Theme
+	}
+
+	if s.FontSize < 8 || s.FontSize > 40 {
+		s.FontSize = d.FontSize
+	}
+
+	if s.LineHeight < 1 || s.LineHeight > 2 {
+		s.LineHeight = d.LineHeight
+	}
+
+	if s.Scrollback < 0 {
+		s.Scrollback = d.Scrollback
+	}
+
+	if s.SidebarWidth < 200 {
+		s.SidebarWidth = d.SidebarWidth
+	}
+
+	return s
+}
+
+func writeAtomic(path string, data []byte) error {
+	tmp := path + ".tmp"
+
+	if err := os.WriteFile(tmp, data, 0o600); err != nil {
+		return err
+	}
+
+	if err := os.Rename(tmp, path); err != nil {
+		os.Remove(tmp)
+		return err
+	}
+
+	return nil
+}
+
+func WriteAtomic(path string, data []byte) error {
+	return writeAtomic(path, data)
+}
+
+func Exists(path string) bool {
+	_, err := os.Stat(path)
+	return !errors.Is(err, fs.ErrNotExist)
+}
