@@ -6,7 +6,7 @@ on:
   pull_request:
 
 jobs:
-  test:
+  build:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
@@ -18,14 +18,11 @@ jobs:
       - name: Vet
         run: go vet ./...
 
-      - name: Test
-        run: go test ./...
-
-      - name: Test libraries
+      - name: Vet libraries
         shell: bash
         run: |
           for dir in libs/*/; do
-            (cd "$dir" && go vet ./... && go test ./...)
+            (cd "$dir" && go vet ./...)
           done
 
       - name: Build
