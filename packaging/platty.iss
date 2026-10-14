@@ -42,4 +42,4 @@ Name: "{autoprograms}\Platty"; Filename: "{app}\platty.exe"
 Name: "{autodesktop}\Platty"; Filename: "{app}\platty.exe"; Tasks: desktopicon
 
 [Run]
-Filename: "{app}\platty.exe"; Description: "{cm:LaunchProgram,Platty}"; Flags: nowait postinstall skipsilent
+Filename: "{app}\platty.exe"; Description: "{cm:LaunchProgram,Platty}"; Flags: nowait postinstall skipifsilent
