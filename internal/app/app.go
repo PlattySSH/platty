@@ -86,12 +86,14 @@ type App struct {
 	clips       chan serverClip
 	allowedClip *serverClip
 
-	maximized bool
-	closing   bool
-	hideAddrs atomic.Bool
-	keepAlive atomic.Int64
-	vaultRev  uint64
-	mu        sync.Mutex
+	maximized  bool
+	closing    bool
+	hideAddrs  atomic.Bool
+	autoUpdate atomic.Bool
+	updates    updater
+	keepAlive  atomic.Int64
+	vaultRev   uint64
+	mu         sync.Mutex
 }
 
 func Run() error {
@@ -135,6 +137,7 @@ func Run() error {
 		gioapp.Decorated(false),
 	)
 
+	a.startUpdates()
 	return a.loop()
 }
 
@@ -148,6 +151,7 @@ func (a *App) loop() error {
 		switch e := ev.(type) {
 		case gioapp.DestroyEvent:
 			a.shutdown()
+			a.applyUpdate()
 			return e.Err
 		case *gioapp.ClosingEvent:
 			if a.confirmClose() {

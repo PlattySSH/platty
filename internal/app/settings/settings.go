@@ -77,6 +77,7 @@ type Dialog struct {
 
 	fontSize, lineHeight, scrollback, keepAlive     widget.Editor
 	blink, copySel, confirm, hideIPs, restore, ligs widget.Bool
+	autoUpdate                                      widget.Bool
 
 	ok, apply, cancel widget.Clickable
 	list              layout.List
@@ -126,6 +127,7 @@ func New(a core.Host) *Dialog {
 	d.hideIPs.Value = s.HideAddresses
 	d.restore.Value = s.RestoreTabs
 	d.ligs.Value = s.Ligatures
+	d.autoUpdate.Value = s.AutoUpdate
 
 	for i, name := range fonts.TerminalFonts {
 		if name == s.TerminalFont {
@@ -171,6 +173,7 @@ func (d *Dialog) collect(a core.Host) config.Settings {
 	s.HideAddresses = d.hideIPs.Value
 	s.RestoreTabs = d.restore.Value
 	s.Ligatures = d.ligs.Value
+	s.AutoUpdate = d.autoUpdate.Value
 	s.LockAfter = lockAfterMinutes[d.sec.lockAfter.Value]
 	return s
 }

@@ -15,6 +15,7 @@ import (
 type about struct {
 	mascot                         sol.Sol
 	website, repo, issue, licenses widget.Clickable
+	upgrade                        widget.Clickable
 }
 
 func (s *about) update(a core.Host, gtx C) {
@@ -29,6 +30,72 @@ func (s *about) update(a core.Host, gtx C) {
 		if clk.Clicked(gtx) {
 			a.OpenURL(url)
 		}
+	}
+
+	if !s.upgrade.Clicked(gtx) {
+		return
+	}
+
+	switch info := a.Update(); {
+	case info.State == core.UpdateReady:
+		a.RestartToUpdate()
+	case info.State == core.UpdateAvailable, info.State == core.UpdateFailed && info.Version != "":
+		a.DownloadUpdate()
+	case info.State != core.UpdateChecking && info.State != core.UpdateDownloading:
+		a.CheckForUpdates()
+	}
+}
+
+func updateAction(info core.UpdateInfo) (*icons.Icon, string) {
+	switch info.State {
+	case core.UpdateChecking, core.UpdateDownloading:
+		return nil, ""
+	case core.UpdateAvailable:
+		return icons.Download, "Download update"
+	case core.UpdateReady:
+		return icons.Refresh, "Restart now"
+	case core.UpdateFailed:
+		if info.Version != "" {
+			return icons.Download, "Try again"
+		}
+	}
+
+	return icons.Refresh, "Check for updates"
+}
+
+func (d *Dialog) updates(a core.Host) []layout.FlexChild {
+	k := a.Kit()
+	th := k.Th
+	info := a.Update()
+	ic, action := updateAction(info)
+
+	return []layout.FlexChild{
+		layout.Rigid(func(gtx C) D {
+			return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
+				layout.Rigid(func(gtx C) D {
+					if action == "" {
+						return D{}
+					}
+
+					return layout.Inset{Right: 12}.Layout(gtx, func(gtx C) D {
+						return k.Button(gtx, &d.about.upgrade, kit.Secondary, ic, action)
+					})
+				}),
+				layout.Flexed(1, func(gtx C) D {
+					return k.Label(gtx, kit.TextStyle{Color: th.TextMuted, MaxLines: 2}, info.Label())
+				}),
+			)
+		}),
+		layout.Rigid(kit.Gap(12)),
+		layout.Rigid(func(gtx C) D {
+			return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
+				layout.Rigid(func(gtx C) D { return k.Toggle(gtx, &d.autoUpdate) }),
+				layout.Rigid(kit.Gap(12)),
+				layout.Rigid(func(gtx C) D {
+					return k.Label(gtx, kit.TextStyle{Color: th.TextMuted}, "Check for updates automatically")
+				}),
+			)
+		}),
 	}
 }
 
@@ -52,7 +119,7 @@ func (d *Dialog) aboutPage(a core.Host, gtx C) []layout.FlexChild {
 		})
 	}
 
-	return []layout.FlexChild{
+	children := []layout.FlexChild{
 		layout.Rigid(func(gtx C) D {
 			return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 				layout.Rigid(func(gtx C) D { return s.mascot.Layout(gtx, k, 64) }),
@@ -71,6 +138,11 @@ func (d *Dialog) aboutPage(a core.Host, gtx C) []layout.FlexChild {
 			)
 		}),
 		layout.Rigid(kit.Gap(18)),
+	}
+
+	children = append(children, d.updates(a)...)
+	children = append(children,
+		layout.Rigid(kit.Gap(22)),
 		layout.Rigid(func(gtx C) D {
 			return k.Label(gtx, kit.TextStyle{Color: th.TextMuted, MaxLines: 2}, "A fast, native SSH client and terminal for Windows.")
 		}),
@@ -87,5 +159,7 @@ func (d *Dialog) aboutPage(a core.Host, gtx C) []layout.FlexChild {
 		layout.Rigid(func(gtx C) D {
 			return k.Label(gtx, kit.TextStyle{Size: th.TextSizeSmall, Color: th.TextFaint}, "© 2026 AlesixDev · MIT License · Icons by Phosphor · Fonts under the SIL Open Font License")
 		}),
-	}
+	)
+
+	return children
 }

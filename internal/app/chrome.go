@@ -3,6 +3,7 @@ package app
 import (
 	"image"
 	"image/color"
+	"strconv"
 
 	"gioui.org/f32"
 	"gioui.org/io/pointer"
@@ -40,6 +41,7 @@ type chrome struct {
 	newTerm    kit.Row
 	profiles   widget.Clickable
 	settings   kit.Row
+	upgrade    kit.Row
 
 	search     widget.Clickable
 	newTab     widget.Clickable
@@ -185,6 +187,15 @@ func (c *chrome) handleNav(a *App, gtx C) {
 		a.ws.menu.Open(a.ws.newTabMenu(a), image.Pt(gtx.Dp(8), gtx.Dp(navRowHeight)))
 	}
 
+	if ev := c.upgrade.Update(gtx); ev.Click {
+		switch a.Update().State {
+		case core.UpdateAvailable, core.UpdateFailed:
+			a.DownloadUpdate()
+		case core.UpdateReady:
+			a.RestartToUpdate()
+		}
+	}
+
 	if ev := c.settings.Update(gtx); ev.Click {
 		a.Open(settings.New(a))
 	}
@@ -250,6 +261,12 @@ func (c *chrome) sidebarTools(a *App, gtx C) D {
 			}
 
 			children = append(children, layout.Rigid(func(gtx C) D { return c.toolRow(a, gtx, i) }))
+		}
+
+		if label := upgradeLabel(a.Update()); label != "" {
+			children = append(children, layout.Rigid(func(gtx C) D {
+				return c.navRowStyled(a, gtx, &c.upgrade, icons.Download, label, false, true, nil)
+			}))
 		}
 
 		children = append(children, layout.Rigid(func(gtx C) D {
@@ -463,4 +480,21 @@ func (c *chrome) main(a *App, gtx C) D {
 
 	header.Add(gtx.Ops)
 	return D{Size: size}
+}
+
+func upgradeLabel(info core.UpdateInfo) string {
+	switch info.State {
+	case core.UpdateAvailable:
+		return "Update to " + info.Version
+	case core.UpdateDownloading:
+		return "Downloading update… " + strconv.Itoa(int(info.Progress*100)) + "%"
+	case core.UpdateReady:
+		return "Restart to update"
+	case core.UpdateFailed:
+		if info.Version != "" {
+			return "Retry update"
+		}
+	}
+
+	return ""
 }

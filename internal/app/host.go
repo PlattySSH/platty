@@ -208,4 +208,5 @@ func (a *App) OpenURL(link string) { openURL(link) }
 func (a *App) syncLive() {
 	a.hideAddrs.Store(a.settings.HideAddresses)
 	a.keepAlive.Store(int64(a.settings.KeepAlive))
+	a.autoUpdate.Store(a.settings.AutoUpdate)
 }

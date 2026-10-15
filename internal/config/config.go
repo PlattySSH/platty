@@ -44,6 +44,7 @@ type Settings struct {
 	RestoreTabs   bool    `json:"restoreTabs"`
 	Ligatures     bool    `json:"ligatures"`
 	Clipboard     string  `json:"serverClipboard"`
+	AutoUpdate    bool    `json:"autoUpdate"`
 }
 
 const designVersion = 3
@@ -64,6 +65,7 @@ func Defaults() Settings {
 		LockAfter:     15,
 		RestoreTabs:   true,
 		Clipboard:     ClipboardAsk,
+		AutoUpdate:    true,
 		Ligatures:     true,
 		SidebarWidth:  280,
 		SidebarOpen:   "hosts",
