@@ -13,9 +13,9 @@ const (
 	KeySize  = chacha20poly1305.KeySize
 	saltSize = 16
 
-	maxTime    = 16
-	maxMemory  = 1 << 20
-	maxThreads = 16
+	maxTime    = 8
+	maxMemory  = 256 * 1024
+	maxThreads = 8
 )
 
 var (
