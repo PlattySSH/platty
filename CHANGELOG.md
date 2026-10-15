@@ -2,6 +2,27 @@
 
 All notable changes to Platty are listed here. Versions follow [Semantic Versioning](https://semver.org).
 
+## 0.1.1-beta.1 (2026-10-15)
+
+A security and performance beta, and the first build that updates itself.
+
+### Updates
+- Platty checks GitHub for new versions once a day and offers them in the sidebar and in Settings › About.
+- Updates are verified against a signed checksum list before they install; installed and portable builds both update in place.
+
+### Security
+- Ctrl+click only opens http and https links, so a program can't make Platty run a file or a Windows protocol handler.
+- SFTP downloads clean up file names sent by the server, so they can't be written outside the chosen folder, and editing a remote program opens it in Notepad instead of running it.
+- Programs in the terminal now ask before copying to the clipboard (Settings › Terminal).
+- Pasted text can no longer end bracketed paste early and run commands on its own.
+- Fixed crashes from wide characters in one-column panes and from malformed server metrics; an internal terminal error now resets that tab instead of closing Platty.
+- Exporting to `~/.ssh/config` strips characters that could add directives, and settings and the vault are flushed to disk before they replace the old file.
+
+### Performance
+- The terminal uploads only the rows that change, reuses rows when scrolling and skips frames where nothing changed.
+- Split panes share one glyph cache, resizing waits until you stop dragging, and terminal cells use 20% less memory.
+- Server metrics are only fetched for the visible pane.
+
 ## 0.1.0 (2026-10-14)
 
 The first public beta.
