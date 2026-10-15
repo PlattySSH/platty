@@ -25,6 +25,12 @@ jobs:
         shell: pwsh
         run: ./packaging/build.ps1 -Version $env:VERSION -Installer
 
+      - name: Sign
+        shell: bash
+        env:
+          UPDATE_SIGNING_KEY: ${{ secrets.UPDATE_SIGNING_KEY }}
+        run: go run ./packaging/sign dist/platty-*.zip dist/platty-*-setup.exe
+
       - name: Release notes
         shell: bash
         run: |
@@ -43,5 +49,5 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create "$GITHUB_REF_NAME" dist/platty-*.zip dist/platty-*-setup.exe \
+          gh release create "$GITHUB_REF_NAME" dist/platty-*.zip dist/platty-*-setup.exe dist/SHA256SUMS dist/SHA256SUMS.sig \
             --title "Platty $VERSION" --notes-file dist/notes.md --prerelease

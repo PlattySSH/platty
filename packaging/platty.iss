@@ -28,6 +28,8 @@ UninstallDisplayName=Platty
 ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
 MinVersion=10.0.17763
+CloseApplications=force
+RestartApplications=no
 
 [Tasks]
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
@@ -43,3 +45,10 @@ Name: "{autodesktop}\Platty"; Filename: "{app}\platty.exe"; Tasks: desktopicon
 
 [Run]
 Filename: "{app}\platty.exe"; Description: "{cm:LaunchProgram,Platty}"; Flags: nowait postinstall skipifsilent
+Filename: "{app}\platty.exe"; Flags: nowait; Check: IsUpdate
+
+[Code]
+function IsUpdate: Boolean;
+begin
+  Result := Pos('/UPDATE', UpperCase(GetCmdTail)) > 0;
+end;
