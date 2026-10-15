@@ -282,7 +282,10 @@ func (s *Session) Close() {
 	}
 
 	s.mu.Unlock()
+	go release(t, c)
+}
 
+func release(t Transport, c *sshx.Client) {
 	if t != nil {
 		t.Close()
 	}
@@ -424,7 +427,9 @@ func (s *Session) writeLoop() {
 			s.mu.Unlock()
 
 			if ok && t != nil {
-				t.Write(p)
+				if _, err := t.Write(p); err != nil {
+					t.Close()
+				}
 			}
 		case <-s.done:
 			return
@@ -449,14 +454,7 @@ func (s *Session) closed(gen int, err error) {
 	t, c := s.transport, s.client
 	s.transport, s.client = nil, nil
 	s.mu.Unlock()
-
-	if t != nil {
-		t.Close()
-	}
-
-	if c != nil {
-		c.Close()
-	}
+	release(t, c)
 
 	if s.Kind == SSH {
 		s.print("\r\n" + styleInfo + "Connection closed. Press Enter to reconnect." + styleReset + "\r\n")
