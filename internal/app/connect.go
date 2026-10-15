@@ -115,7 +115,7 @@ func (a *App) newLocalPane(pr shell.Profile) *Pane {
 		Scrollback:  a.settings.Scrollback,
 		Title:       pr.Name,
 		OnChange:    a.Invalidate,
-		OnClipboard: a.serverCopy,
+		OnClipboard: a.serverCopy(pr.Name),
 	})
 	p := a.newPane(s)
 	p.origin = origin{Profile: pr.ID, Command: pr.Command, Title: pr.Name}
@@ -131,7 +131,7 @@ func (a *App) newSSHPane(h vault.Host) *Pane {
 
 	s := session.New(session.Options{
 		Kind:        session.SSH,
-		OnClipboard: a.serverCopy,
+		OnClipboard: a.serverCopy(h.Title()),
 		Target:      a.target(h, 0),
 		Vault:       a.vault,
 		Hooks:       a.hooks(),

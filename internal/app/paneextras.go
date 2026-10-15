@@ -9,6 +9,8 @@ import (
 
 	"gioui.org/io/clipboard"
 
+	"github.com/plattyssh/platty/internal/app/dialogs"
+	"github.com/plattyssh/platty/internal/config"
 	"github.com/plattyssh/platty/internal/ui/icons"
 	"github.com/plattyssh/platty/internal/ui/kit"
 	"github.com/plattyssh/platty/internal/ui/termview"
@@ -126,28 +128,72 @@ func broadcastBorder(gtx C, a *App, size image.Point) {
 	kit.Border(gtx, image.Rectangle{Max: size}.Inset(1), 0, 2, kit.Fade(a.th().Danger, 0.8))
 }
 
-const maxServerCopy = 1 << 20
+const (
+	maxServerCopy = 1 << 20
+	clipPreview   = 60
+)
 
-func (a *App) serverCopy(text string) {
-	if len(text) > maxServerCopy {
-		return
-	}
+type serverClip struct {
+	from string
+	text string
+}
 
-	select {
-	case a.clips <- text:
-		a.Invalidate()
-	default:
+func (a *App) serverCopy(from string) func(string) {
+	return func(text string) {
+		if len(text) > maxServerCopy {
+			return
+		}
+
+		select {
+		case a.clips <- serverClip{from: from, text: text}:
+			a.Invalidate()
+		default:
+		}
 	}
 }
 
 func (a *App) applyServerCopies(gtx C) {
+	if c := a.allowedClip; c != nil {
+		a.allowedClip = nil
+		a.writeServerClip(gtx, *c)
+	}
+
 	for {
+		if a.settings.Clipboard == config.ClipboardAsk && a.modal != nil {
+			return
+		}
+
 		select {
-		case text := <-a.clips:
-			gtx.Execute(clipboard.WriteCmd{Type: "application/text", Data: io.NopCloser(strings.NewReader(text))})
-			a.toasts.Info("Copied from the server", fmt.Sprintf("A program in the terminal copied %d characters to your clipboard.", len([]rune(text))))
+		case c := <-a.clips:
+			switch a.settings.Clipboard {
+			case config.ClipboardBlock:
+			case config.ClipboardAllow:
+				a.writeServerClip(gtx, c)
+			default:
+				a.askServerClip(c)
+				return
+			}
 		default:
 			return
 		}
 	}
+}
+
+func (a *App) askServerClip(c serverClip) {
+	preview := strings.TrimSpace(strings.SplitN(c.text, "\n", 2)[0])
+
+	if r := []rune(preview); len(r) > clipPreview {
+		preview = string(r[:clipPreview]) + "…"
+	}
+
+	msg := fmt.Sprintf("A program in %s wants to copy %d characters to your clipboard: “%s”", c.from, len([]rune(c.text)), preview)
+	a.Open(dialogs.NewConfirm(a.kit, "Allow clipboard access?", msg, "Copy", func() {
+		a.allowedClip = &c
+		a.Invalidate()
+	}))
+}
+
+func (a *App) writeServerClip(gtx C, c serverClip) {
+	gtx.Execute(clipboard.WriteCmd{Type: "application/text", Data: io.NopCloser(strings.NewReader(c.text))})
+	a.toasts.Info("Copied from the server", fmt.Sprintf("A program in %s copied %d characters to your clipboard.", c.from, len([]rune(c.text))))
 }

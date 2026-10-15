@@ -38,6 +38,8 @@ var settingsPages = []struct {
 
 var cursorStyles = []string{config.CursorBlock, config.CursorBar, config.CursorUnderline}
 
+var clipboardModes = []string{config.ClipboardAsk, config.ClipboardAllow, config.ClipboardBlock}
+
 var keymap = [][2]string{
 	{"Search everywhere", "Ctrl+Shift+P"},
 	{"New local terminal", "Ctrl+Shift+T"},
@@ -69,6 +71,7 @@ type Dialog struct {
 	pages    []widget.Clickable
 	theme    kit.Segmented
 	cur      kit.Segmented
+	clip     kit.Segmented
 	shell    kit.Select
 	termFont kit.Select
 
@@ -92,6 +95,12 @@ func New(a core.Host) *Dialog {
 	for i, n := range theme.Names {
 		if n == s.Theme {
 			d.theme.Value = i
+		}
+	}
+
+	for i, m := range clipboardModes {
+		if m == s.Clipboard {
+			d.clip.Value = i
 		}
 	}
 
@@ -133,6 +142,7 @@ func (d *Dialog) collect(a core.Host) config.Settings {
 	s := d.s
 	s.Theme = theme.Names[d.theme.Value]
 	s.CursorStyle = cursorStyles[d.cur.Value]
+	s.Clipboard = clipboardModes[d.clip.Value]
 	s.TerminalFont = fonts.TerminalFonts[d.termFont.Value]
 
 	if d.shell.Value < len(a.Profiles()) {
@@ -326,6 +336,7 @@ func (d *Dialog) content(a core.Host, gtx C) D {
 			row("Cursor", left(func(gtx C) D { return k.Segmented(gtx, &d.cur, []string{"Block", "Bar", "Underline"}) })),
 			row("Blinking cursor", left(func(gtx C) D { return k.Toggle(gtx, &d.blink) })),
 			row("Copy on select", left(func(gtx C) D { return k.Toggle(gtx, &d.copySel) })),
+			row("Programs can copy", left(func(gtx C) D { return k.Segmented(gtx, &d.clip, []string{"Ask", "Allow", "Block"}) })),
 			row("Reopen tabs on start", left(func(gtx C) D { return k.Toggle(gtx, &d.restore) })),
 			row("Font ligatures", left(func(gtx C) D { return k.Toggle(gtx, &d.ligs) })),
 			row("Scrollback lines", left(narrow(&d.scrollback, "10000"))),

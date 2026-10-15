@@ -17,6 +17,12 @@ const (
 	CursorUnderline = "underline"
 )
 
+const (
+	ClipboardAsk   = "ask"
+	ClipboardAllow = "allow"
+	ClipboardBlock = "block"
+)
+
 type Settings struct {
 	Theme         string  `json:"theme"`
 	FontSize      float32 `json:"fontSize"`
@@ -37,6 +43,7 @@ type Settings struct {
 	Onboarded     bool    `json:"onboarded"`
 	RestoreTabs   bool    `json:"restoreTabs"`
 	Ligatures     bool    `json:"ligatures"`
+	Clipboard     string  `json:"serverClipboard"`
 }
 
 const designVersion = 3
@@ -56,6 +63,7 @@ func Defaults() Settings {
 		KeepAlive:     30,
 		LockAfter:     15,
 		RestoreTabs:   true,
+		Clipboard:     ClipboardAsk,
 		Ligatures:     true,
 		SidebarWidth:  280,
 		SidebarOpen:   "hosts",
@@ -144,6 +152,10 @@ func (s Settings) sanitized() Settings {
 
 	if s.SidebarWidth < 200 {
 		s.SidebarWidth = d.SidebarWidth
+	}
+
+	if s.Clipboard != ClipboardAllow && s.Clipboard != ClipboardBlock {
+		s.Clipboard = ClipboardAsk
 	}
 
 	return s

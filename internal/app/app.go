@@ -74,15 +74,16 @@ type App struct {
 	tunnels   *tunnel.Manager
 	transfers *transfer.Queue
 
-	modal    core.Modal
-	docked   [2]core.Modal
-	prompts  promptQueue
-	passes   passphrases
-	lock     lockScreen
-	started  time.Time
-	restored bool
-	drops    chan []string
-	clips    chan string
+	modal       core.Modal
+	docked      [2]core.Modal
+	prompts     promptQueue
+	passes      passphrases
+	lock        lockScreen
+	started     time.Time
+	restored    bool
+	drops       chan []string
+	clips       chan serverClip
+	allowedClip *serverClip
 
 	maximized bool
 	closing   bool
@@ -105,7 +106,7 @@ func Run() error {
 		vault:    v,
 		profiles: shell.Detect(),
 		drops:    make(chan []string, 8),
-		clips:    make(chan string, 4),
+		clips:    make(chan serverClip, 4),
 	}
 	a.syncLive()
 	a.shaper, a.face = fonts.Load()
