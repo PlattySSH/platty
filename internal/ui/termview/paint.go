@@ -524,10 +524,3 @@ func (v *View) paintDebug(gtx layout.Context, size image.Point) {
 func fillRect(gtx layout.Context, r image.Rectangle, c color.NRGBA) {
 	paint.FillShape(gtx.Ops, c, clip.Rect(r).Op())
 }
-
-func strokeRect(gtx layout.Context, r image.Rectangle, c color.NRGBA) {
-	fillRect(gtx, image.Rect(r.Min.X, r.Min.Y, r.Max.X, r.Min.Y+1), c)
-	fillRect(gtx, image.Rect(r.Min.X, r.Max.Y-1, r.Max.X, r.Max.Y), c)
-	fillRect(gtx, image.Rect(r.Min.X, r.Min.Y, r.Min.X+1, r.Max.Y), c)
-	fillRect(gtx, image.Rect(r.Max.X-1, r.Min.Y, r.Max.X, r.Max.Y), c)
-}

@@ -370,17 +370,6 @@ func (a *App) shortcut(e key.Event) {
 	}
 }
 
-func (a *App) nextTheme() {
-	for i, n := range theme.Names {
-		if n == a.settings.Theme {
-			a.SetTheme(theme.Names[(i+1)%len(theme.Names)])
-			return
-		}
-	}
-
-	a.SetTheme(theme.Carbon)
-}
-
 func (a *App) SetTheme(name string) {
 	a.settings.Theme = name
 	a.kit.SetTheme(theme.New(name))

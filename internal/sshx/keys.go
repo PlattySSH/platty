@@ -125,11 +125,6 @@ func CheckPassphrase(k vault.Key, passphrase string) error {
 	return err
 }
 
-func KeyEncrypted(k vault.Key) bool {
-	_, err := ssh.ParsePrivateKey([]byte(k.Private))
-	return IsPassphraseMissing(err)
-}
-
 var ErrCertMismatch = errors.New("the certificate doesn't belong to this key")
 
 func ParseCertificate(text string) (*ssh.Certificate, error) {

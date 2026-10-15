@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"gioui.org/gesture"
-	"gioui.org/io/event"
 	"gioui.org/io/pointer"
 	"gioui.org/layout"
 	"gioui.org/op"
@@ -596,9 +595,4 @@ func (w *workspace) dragDivider(gtx C, n *node, total int) {
 
 func clipRect(gtx C, size image.Point) clip.Stack {
 	return clip.Rect{Max: size}.Push(gtx.Ops)
-}
-
-func eventArea(gtx C, size image.Point, tag event.Tag) {
-	defer clip.Rect{Max: size}.Push(gtx.Ops).Pop()
-	event.Op(gtx.Ops, tag)
 }

@@ -201,26 +201,9 @@ func Gap(dp unit.Dp) W {
 	}
 }
 
-func Center(gtx C, w W) D {
-	return layout.Center.Layout(gtx, w)
-}
-
-func Pad(dp unit.Dp, w W) W {
-	return func(gtx C) D {
-		return layout.UniformInset(dp).Layout(gtx, w)
-	}
-}
-
 func PadXY(x, y unit.Dp, w W) W {
 	return func(gtx C) D {
 		return layout.Inset{Left: x, Right: x, Top: y, Bottom: y}.Layout(gtx, w)
-	}
-}
-
-func Fixed(w, h int, wd W) W {
-	return func(gtx C) D {
-		gtx.Constraints = layout.Exact(image.Pt(w, h))
-		return wd(gtx)
 	}
 }
 
@@ -260,12 +243,6 @@ func (k *Kit) Kbd(gtx C, s string) D {
 
 func (k *Kit) SectionTitle(gtx C, s string) D {
 	return k.Label(gtx, TextStyle{Size: k.Th.TextSizeSmall, Color: k.Th.TextMuted, Weight: font.Medium}, strings.ToUpper(s))
-}
-
-func Hline(gtx C, c color.NRGBA, thickness int) D {
-	size := image.Pt(gtx.Constraints.Max.X, thickness)
-	Rect(gtx, image.Rectangle{Max: size}, c)
-	return D{Size: size}
 }
 
 func (k *Kit) ReadPointer(gtx C) {

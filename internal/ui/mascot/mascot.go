@@ -198,14 +198,6 @@ func blob(ops *op.Ops, c f32.Point, r float32, amp, phase float64) clip.PathSpec
 	return p.End()
 }
 
-func Outline(size float32, st State) []Cubic {
-	s := size
-	r := s * 0.41
-	phase := st.T * 2 * math.Pi / Period / waves
-	breath := math.Sin(st.T * 4 * math.Pi / Period)
-	return blobCubics(f32.Pt(s/2, s*0.48), r, 0.06+0.012*breath, phase)
-}
-
 func fillGradient(ops *op.Ops, path clip.PathSpec, a, b f32.Point, from, to color.NRGBA) {
 	st := clip.Outline{Path: path}.Op().Push(ops)
 	paint.LinearGradientOp{Stop1: a, Color1: from, Stop2: b, Color2: to}.Add(ops)

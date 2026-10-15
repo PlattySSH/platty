@@ -51,48 +51,6 @@ func sidebar(right bool) *Icon {
 	})
 }
 
-func Logo(gtx layout.Context, size unit.Dp, bg, fg color.NRGBA) layout.Dimensions {
-	px := gtx.Dp(size)
-	s := float32(px)
-	rr := clip.UniformRRect(image.Rect(0, 0, px, px), px/4)
-	paint.FillShape(gtx.Ops, bg, rr.Op(gtx.Ops))
-
-	stroke := max(s/9, 1.5)
-	var p clip.Path
-	p.Begin(gtx.Ops)
-	p.MoveTo(f32.Pt(s*0.26, s*0.30))
-	p.LineTo(f32.Pt(s*0.46, s*0.50))
-	p.LineTo(f32.Pt(s*0.26, s*0.70))
-	paint.FillShape(gtx.Ops, fg, clip.Stroke{Path: p.End(), Width: stroke}.Op())
-	paint.FillShape(gtx.Ops, fg, clip.Rect{
-		Min: image.Pt(int(s*0.52), int(s*0.66)),
-		Max: image.Pt(int(s*0.76), int(s*0.66+stroke)),
-	}.Op())
-
-	return layout.Dimensions{Size: image.Pt(px, px)}
-}
-
-func LogoGradient(gtx layout.Context, size unit.Dp, from, to, fg color.NRGBA) layout.Dimensions {
-	px := gtx.Dp(size)
-	s := float32(px)
-
-	rr := clip.UniformRRect(image.Rect(0, 0, px, px), px*3/10).Push(gtx.Ops)
-	paint.LinearGradientOp{Stop1: f32.Pt(0, 0), Color1: from, Stop2: f32.Pt(s, s), Color2: to}.Add(gtx.Ops)
-	paint.PaintOp{}.Add(gtx.Ops)
-	rr.Pop()
-
-	stroke := max(s/9, 1.5)
-	var p clip.Path
-	p.Begin(gtx.Ops)
-	p.MoveTo(f32.Pt(s*0.27, s*0.31))
-	p.LineTo(f32.Pt(s*0.46, s*0.50))
-	p.LineTo(f32.Pt(s*0.27, s*0.69))
-	paint.FillShape(gtx.Ops, fg, clip.Stroke{Path: p.End(), Width: stroke}.Op())
-	paint.FillShape(gtx.Ops, fg, clip.UniformRRect(image.Rect(int(s*0.52), int(s*0.64), int(s*0.75), int(s*0.64+stroke)), int(stroke/2)).Op(gtx.Ops))
-
-	return layout.Dimensions{Size: image.Pt(px, px)}
-}
-
 var Minimize = custom(func(ops *op.Ops, s float32, c color.NRGBA) {
 	y := int(s / 2)
 	paint.FillShape(ops, c, clip.Rect{Min: image.Pt(int(s*0.3), y), Max: image.Pt(int(s*0.7), y+1)}.Op())

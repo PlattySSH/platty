@@ -26,10 +26,6 @@ const (
 	catcherReach = 1 << 14
 )
 
-func opRecord(gtx C) op.MacroOp {
-	return op.Record(gtx.Ops)
-}
-
 type MenuItem struct {
 	Label    string
 	Icon     *icons.Icon

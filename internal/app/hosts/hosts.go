@@ -240,11 +240,6 @@ func (p *Panel) items() []hostItem {
 	return out
 }
 
-func matchHost(h *vault.Host, q string) bool {
-	hay := strings.ToLower(h.Label + " " + h.Address + " " + h.Username + " " + h.Group + " " + strings.Join(h.Tags, " "))
-	return strings.Contains(hay, q)
-}
-
 func (p *Panel) Body(gtx C) D {
 	a := p.h
 	p.ensure()
@@ -656,31 +651,6 @@ func (p *Panel) folderAction(a core.Host, i int) {
 			a.Vault().DeleteFolder(path)
 		}))
 	}
-}
-
-func initials(s string) string {
-	fields := strings.FieldsFunc(s, func(r rune) bool { return r == ' ' || r == '-' || r == '_' || r == '.' })
-
-	if len(fields) == 0 {
-		return "?"
-	}
-
-	var out []rune
-
-	for _, f := range fields {
-		r := []rune(f)
-		out = append(out, r[0])
-
-		if len(out) == 2 {
-			break
-		}
-	}
-
-	if len(out) == 1 && len([]rune(fields[0])) > 1 {
-		out = append(out, []rune(fields[0])[1])
-	}
-
-	return strings.ToUpper(string(out))
 }
 
 func (p *Panel) beginFrame() {

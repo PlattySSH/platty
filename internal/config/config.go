@@ -2,8 +2,6 @@ package config
 
 import (
 	"encoding/json"
-	"errors"
-	"io/fs"
 	"os"
 	"path/filepath"
 )
@@ -168,9 +166,4 @@ func writeAtomic(path string, data []byte) error {
 
 func WriteAtomic(path string, data []byte) error {
 	return writeAtomic(path, data)
-}
-
-func Exists(path string) bool {
-	_, err := os.Stat(path)
-	return !errors.Is(err, fs.ErrNotExist)
 }
