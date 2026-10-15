@@ -102,11 +102,11 @@ func Format(entries []Entry) string {
 			b.WriteString("\n")
 		}
 
-		b.WriteString("Host " + e.Alias + "\n")
-		b.WriteString("    HostName " + e.HostName + "\n")
+		b.WriteString("Host " + word(e.Alias) + "\n")
+		b.WriteString("    HostName " + word(e.HostName) + "\n")
 
 		if e.User != "" {
-			b.WriteString("    User " + e.User + "\n")
+			b.WriteString("    User " + word(e.User) + "\n")
 		}
 
 		if e.Port != 0 && e.Port != 22 {
@@ -114,11 +114,11 @@ func Format(entries []Entry) string {
 		}
 
 		if e.Identity != "" {
-			b.WriteString("    IdentityFile " + e.Identity + "\n")
+			b.WriteString("    IdentityFile " + quoted(e.Identity) + "\n")
 		}
 
 		if e.Jump != "" {
-			b.WriteString("    ProxyJump " + e.Jump + "\n")
+			b.WriteString("    ProxyJump " + word(e.Jump) + "\n")
 		}
 	}
 
@@ -135,4 +135,24 @@ func Alias(name string) string {
 	}
 
 	return strings.Join(f, "-")
+}
+
+func word(s string) string {
+	return strings.Map(func(r rune) rune {
+		if r <= ' ' || r == 0x7f || r == '"' || r == '\'' || r == '#' {
+			return -1
+		}
+
+		return r
+	}, s)
+}
+
+func quoted(s string) string {
+	return `"` + strings.Map(func(r rune) rune {
+		if r < ' ' || r == 0x7f || r == '"' {
+			return -1
+		}
+
+		return r
+	}, s) + `"`
 }
