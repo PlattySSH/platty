@@ -411,13 +411,7 @@ func (c *chrome) windowButton(a *App, gtx C, clk *widget.Clickable, ic *icons.Ic
 func (c *chrome) toolRow(a *App, gtx C, i int) D {
 	tw := a.tools.list[i]
 	open := a.tools.open[core.Right] == i
-	return c.navRowStyled(a, gtx, &a.tools.rows[i], tw.Icon(), tw.Title(), false, open, func(gtx C) D {
-		if !open {
-			return D{}
-		}
-
-		return layout.Inset{Right: 4}.Layout(gtx, func(gtx C) D { return kit.Dot(gtx, a.th().Text, 6) })
-	})
+	return c.navRowStyled(a, gtx, &a.tools.rows[i], tw.Icon(), tw.Title(), false, open, nil)
 }
 
 func (c *chrome) windowControls(a *App, gtx C) D {
