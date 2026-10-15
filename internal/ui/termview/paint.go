@@ -28,61 +28,130 @@ type filler func(r image.Rectangle, c color.NRGBA)
 
 type rowEntry struct {
 	cells []vt.Cell
+	hash  uint64
+	img   *image.RGBA
+	op    paint.ImageOp
 	valid bool
 }
 
 type rowCache struct {
 	rows  []rowEntry
-	img   *image.RGBA
-	op    paint.ImageOp
-	dirty bool
+	size  image.Point
+	stale bool
+	dirty []int
+	pool  []rowEntry
+	taken []bool
 }
 
 func (c *rowCache) invalidate() {
-	for i := range c.rows {
-		c.rows[i].valid = false
-	}
-
-	c.img = nil
+	c.rows = nil
+	c.stale = true
 }
 
-func (v *View) paintRows(gtx layout.Context) {
-	f := &v.frame
-	c := &v.cache
+func hashCells(cells []vt.Cell) uint64 {
+	h := uint64(14695981039346656037)
 
-	size := image.Pt(f.Cols*v.m.w, f.Rows*v.m.h)
-
-	if len(c.rows) != f.Rows || c.img == nil || c.img.Bounds().Size() != size {
-		c.rows = make([]rowEntry, f.Rows)
-		c.img = image.NewRGBA(image.Rectangle{Max: size})
-		c.dirty = true
+	for _, c := range cells {
+		h = (h ^ (uint64(uint32(c.Rune)) | uint64(c.Fg)<<32)) * 1099511628211
+		h = (h ^ (uint64(c.Bg) | uint64(c.Attr)<<32 | uint64(c.Link)<<48)) * 1099511628211
 	}
 
-	for y := 0; y < f.Rows; y++ {
-		cells := f.Row(y)
+	return h
+}
+
+func (v *View) paintRows(gtx layout.Context, fresh bool) {
+	f := &v.frame
+	c := &v.cache
+	rowSize := image.Pt(f.Cols*v.m.w, v.m.h)
+
+	if len(c.rows) != f.Rows || c.size != rowSize {
+		c.rows = make([]rowEntry, f.Rows)
+		c.size = rowSize
+		c.stale = true
+	}
+
+	if fresh || c.stale {
+		v.updateRows()
+		c.stale = false
+	}
+
+	for y := range c.rows {
+		off := op.Offset(image.Pt(0, y*rowSize.Y)).Push(gtx.Ops)
+		area := clip.Rect{Max: rowSize}.Push(gtx.Ops)
+		c.rows[y].op.Add(gtx.Ops)
+		paint.PaintOp{}.Add(gtx.Ops)
+		area.Pop()
+		off.Pop()
+	}
+}
+
+func (v *View) updateRows() {
+	f := &v.frame
+	c := &v.cache
+	c.dirty = c.dirty[:0]
+	c.pool = c.pool[:0]
+
+	for y := range c.rows {
 		e := &c.rows[y]
 
-		if e.valid && slices.Equal(e.cells, cells) {
+		if !e.valid || !slices.Equal(e.cells, f.Row(y)) {
+			c.dirty = append(c.dirty, y)
+			c.pool = append(c.pool, *e)
+		}
+	}
+
+	if len(c.dirty) == 0 {
+		return
+	}
+
+	c.taken = slices.Grow(c.taken[:0], len(c.pool))[:len(c.pool)]
+	clear(c.taken)
+	todo := c.dirty[:0]
+
+	for _, y := range c.dirty {
+		cells := f.Row(y)
+		h := hashCells(cells)
+		found := -1
+
+		for i, e := range c.pool {
+			if !c.taken[i] && e.valid && e.hash == h && slices.Equal(e.cells, cells) {
+				found = i
+				break
+			}
+		}
+
+		if found < 0 {
+			todo = append(todo, y)
 			continue
 		}
 
-		row := c.img.SubImage(image.Rect(0, y*v.m.h, size.X, (y+1)*v.m.h)).(*image.RGBA)
-		v.rasterRow(row, cells)
+		c.taken[found] = true
+		c.rows[y] = c.pool[found]
+	}
+
+	next := 0
+
+	for _, y := range todo {
+		for c.taken[next] {
+			next++
+		}
+
+		e := c.pool[next]
+		c.taken[next] = true
+		cells := f.Row(y)
+
+		if e.img == nil || e.img.Bounds().Size() != c.size {
+			e.img = image.NewRGBA(image.Rectangle{Max: c.size})
+		}
+
+		v.rasterRow(e.img, cells)
 		e.cells = append(e.cells[:0], cells...)
+		e.hash = hashCells(cells)
+		e.op = paint.NewImageOp(e.img)
+		e.op.Filter = paint.FilterNearest
 		e.valid = true
-		c.dirty = true
+		c.rows[y] = e
 	}
-
-	if c.dirty {
-		c.op = paint.NewImageOp(c.img)
-		c.op.Filter = paint.FilterNearest
-		c.dirty = false
-	}
-
-	area := clip.Rect{Max: size}.Push(gtx.Ops)
-	c.op.Add(gtx.Ops)
-	paint.PaintOp{}.Add(gtx.Ops)
-	area.Pop()
 }
 
 func (v *View) rasterRow(img *image.RGBA, cells []vt.Cell) {
@@ -116,7 +185,7 @@ func (v *View) rasterRow(img *image.RGBA, cells []vt.Cell) {
 	ligs := v.ligatures(cells)
 
 	for x, c := range cells {
-		if c.Width == 0 || c.Rune == 0 || c.Rune == ' ' {
+		if c.Width() == 0 || c.Rune == 0 || c.Rune == ' ' {
 			continue
 		}
 
@@ -127,7 +196,7 @@ func (v *View) rasterRow(img *image.RGBA, cells []vt.Cell) {
 			continue
 		}
 
-		g := v.glyphs.Get(c.Rune, cellStyle(c), int(c.Width))
+		g := v.glyphs.Get(c.Rune, cellStyle(c), int(c.Width()))
 
 		if ligs != nil && ligs[x] != 0 {
 			g = v.glyphs.GetGlyph(ligs[x], cellStyle(c))
@@ -427,7 +496,7 @@ func (v *View) paintCursor(gtx layout.Context) {
 	cell := v.frame.Row(cur.Y)[cur.X]
 	w := v.m.w
 
-	if cell.Width == 2 {
+	if cell.Width() == 2 {
 		w *= 2
 	}
 
@@ -473,7 +542,7 @@ func (v *View) paintCursor(gtx layout.Context) {
 					img := ci.img
 					v.drawBox(func(r image.Rectangle, c color.NRGBA) { fillImage(img, r, c) }, cell.Rune, 0, v.theme.CursorText)
 				} else {
-					blitGlyph(ci.img, v.glyphs.Get(cell.Rune, cellStyle(cell), int(cell.Width)), image.Point{}, v.theme.CursorText)
+					blitGlyph(ci.img, v.glyphs.Get(cell.Rune, cellStyle(cell), int(cell.Width())), image.Point{}, v.theme.CursorText)
 				}
 			}
 

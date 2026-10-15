@@ -85,7 +85,7 @@ func (t *Terminal) TextRange(a, b Pos) string {
 		for x := max(from, 0); x <= to; x++ {
 			c := l.cells[x]
 
-			if c.Width == 0 {
+			if c.Width() == 0 {
 				continue
 			}
 
@@ -153,7 +153,7 @@ func (t *Terminal) Find(query string, matchCase bool) []Match {
 		}
 
 		for x, c := range l.cells {
-			if c.Width == 0 {
+			if c.Width() == 0 {
 				continue
 			}
 

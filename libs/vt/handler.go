@@ -27,12 +27,22 @@ var decGraphics = [...]rune{
 	'⎻', '─', '⎼', '⎽', '├', '┤', '┴', '┬', '│', '≤', '≥', 'π', '≠', '£', '·',
 }
 
-func runeWidth(r rune) int {
+func (t *Terminal) runeWidth(r rune) int {
 	if r < 0x300 {
 		return 1
 	}
 
-	return uniseg.StringWidth(string(r))
+	if w, ok := t.widths[r]; ok {
+		return int(w)
+	}
+
+	if t.widths == nil {
+		t.widths = map[rune]uint8{}
+	}
+
+	w := uniseg.StringWidth(string(r))
+	t.widths[r] = uint8(w)
+	return w
 }
 
 func (t *Terminal) Print(r rune) {
@@ -40,7 +50,7 @@ func (t *Terminal) Print(r rune) {
 		r = decGraphics[r-0x60]
 	}
 
-	w := runeWidth(r)
+	w := t.runeWidth(r)
 
 	if w == 0 {
 		return
@@ -79,11 +89,12 @@ func (t *Terminal) Print(r rune) {
 
 	c := t.cur.pen
 	c.Rune = r
-	c.Width = uint8(w)
+	c.SetWidth(uint8(w))
 	cells[t.cur.x] = c
 
 	if w == 2 {
-		c.Rune, c.Width = 0, 0
+		c.Rune = 0
+		c.SetWidth(0)
 		cells[t.cur.x+1] = c
 	}
 
@@ -102,9 +113,9 @@ func (t *Terminal) clearWide(cells []Cell, x int) {
 	}
 
 	switch {
-	case cells[x].Width == 2 && x+1 < len(cells):
+	case cells[x].Width() == 2 && x+1 < len(cells):
 		cells[x+1] = blank(cells[x+1].Bg)
-	case cells[x].Width == 0 && x > 0:
+	case cells[x].Width() == 0 && x > 0:
 		cells[x-1] = blank(cells[x-1].Bg)
 	}
 }
@@ -325,7 +336,7 @@ func (t *Terminal) restoreCursor() {
 func (t *Terminal) screenAlignment() {
 	for i := range t.screen.lines {
 		for x := range t.screen.lines[i].cells {
-			t.screen.lines[i].cells[x] = Cell{Rune: 'E', Width: 1}
+			t.screen.lines[i].cells[x] = Cell{Rune: 'E', Attr: 1 << attrWidthShift}
 		}
 	}
 

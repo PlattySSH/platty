@@ -24,6 +24,7 @@ const (
 	maxTextSize  = unit.Sp(40)
 	padding      = unit.Dp(12)
 	blinkTimeout = 30 * time.Second
+	resizeDelay  = 100 * time.Millisecond
 )
 
 type Backend interface {
@@ -75,6 +76,10 @@ type View struct {
 	frame     vt.Frame
 	modes     vt.Modes
 	offset    int
+	snapGen   uint64
+	snapped   bool
+	pending   image.Point
+	pendingAt time.Time
 	cache     rowCache
 	cursorImg cursorImage
 	scrollY   float32
@@ -158,9 +163,15 @@ func (v *View) Layout(gtx layout.Context) layout.Dimensions {
 	start := time.Now()
 	size := gtx.Constraints.Max
 
+	term := v.backend.Terminal()
 	v.updateMetrics(gtx)
 	v.updateGrid(gtx, size)
-	v.modes = v.backend.Terminal().Modes()
+	gen := term.Generation()
+
+	if !v.snapped || gen != v.snapGen {
+		v.modes = term.Modes()
+	}
+
 	v.handleEvents(gtx)
 	v.handleMenu(gtx)
 
@@ -169,8 +180,14 @@ func (v *View) Layout(gtx layout.Context) layout.Dimensions {
 		v.wantFocus = false
 	}
 
-	v.backend.Terminal().Snapshot(&v.frame, v.offset)
-	v.offset = v.frame.Offset
+	fresh := !v.snapped || gen != v.snapGen || v.offset != v.frame.Offset
+
+	if fresh {
+		term.Snapshot(&v.frame, v.offset)
+		v.offset = v.frame.Offset
+		v.snapGen, v.snapped = gen, true
+	}
+
 	v.search.refresh(v)
 
 	area := clip.Rect{Max: size}.Push(gtx.Ops)
@@ -190,7 +207,7 @@ func (v *View) Layout(gtx layout.Context) layout.Dimensions {
 	grid := op.Offset(v.gridOff).Push(gtx.Ops)
 	v.paintSelection(gtx)
 	v.paintSearch(gtx)
-	v.paintRows(gtx)
+	v.paintRows(gtx, fresh)
 	v.paintLink(gtx)
 	v.paintCursor(gtx)
 	grid.Pop()
@@ -219,7 +236,7 @@ func (v *View) updateMetrics(gtx layout.Context) {
 		return
 	}
 
-	v.glyphs = glyphs.NewCache(v.fonts, float32(px), v.set.LineHeight)
+	v.glyphs = sharedCache(v.fonts, px, v.set.LineHeight)
 	gm := v.glyphs.Metrics()
 	v.m = metrics{px: px, line: v.set.LineHeight, w: gm.CellW, h: gm.CellH, baseline: gm.Baseline}
 	v.cache.invalidate()
@@ -233,9 +250,22 @@ func (v *View) updateGrid(gtx layout.Context, size image.Point) {
 	v.gridOff = image.Pt(pad, pad)
 
 	if cols == v.cols && rows == v.rows {
+		v.pendingAt = time.Time{}
 		return
 	}
 
+	if v.cols != 0 {
+		if want := image.Pt(cols, rows); want != v.pending || v.pendingAt.IsZero() {
+			v.pending, v.pendingAt = want, gtx.Now
+		}
+
+		if due := v.pendingAt.Add(resizeDelay); gtx.Now.Before(due) {
+			gtx.Execute(op.InvalidateCmd{At: due})
+			return
+		}
+	}
+
+	v.pendingAt = time.Time{}
 	v.cols, v.rows = cols, rows
 	v.backend.Resize(cols, rows)
 }
@@ -251,7 +281,7 @@ const (
 	blinkHidden  = 300 * time.Millisecond
 	blinkFadeIn  = 180 * time.Millisecond
 	blinkCycle   = blinkVisible + blinkFadeOut + blinkHidden + blinkFadeIn
-	fadeFrame    = 16 * time.Millisecond
+	fadeFrame    = 33 * time.Millisecond
 )
 
 func (v *View) cursorAlpha() float32 {

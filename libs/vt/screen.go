@@ -118,7 +118,7 @@ func compact(l line) line {
 }
 
 func emptyCell(c Cell) bool {
-	return (c.Rune == 0 || c.Rune == ' ') && c.Width == 1 && c.Attr == 0 && c.Bg == DefaultColor && c.Link == 0
+	return (c.Rune == 0 || c.Rune == ' ') && c.Width() == 1 && c.Style() == 0 && c.Bg == DefaultColor && c.Link == 0
 }
 
 func (s *scrollback) pop() (line, bool) {

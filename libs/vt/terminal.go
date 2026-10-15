@@ -10,6 +10,7 @@ import (
 const (
 	defaultScrollback = 10_000
 	tabWidth          = 8
+	writeChunk        = 16 * 1024
 )
 
 type Option func(*Terminal)
@@ -90,6 +91,7 @@ type Terminal struct {
 	cursorSet  bool
 	lastRune   rune
 	title      string
+	widths     map[rune]uint8
 
 	reply   func([]byte)
 	onTitle func(string)
@@ -145,11 +147,15 @@ func (t *Terminal) resetTabs() {
 }
 
 func (t *Terminal) Write(p []byte) (int, error) {
-	t.mu.Lock()
-	t.parser.Feed(p)
-	t.mu.Unlock()
+	for rest := p; len(rest) > 0; {
+		n := min(len(rest), writeChunk)
+		t.mu.Lock()
+		t.parser.Feed(rest[:n])
+		t.mu.Unlock()
+		t.gen.Add(1)
+		rest = rest[n:]
+	}
 
-	t.gen.Add(1)
 	return len(p), nil
 }
 

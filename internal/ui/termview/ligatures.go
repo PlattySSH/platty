@@ -10,7 +10,7 @@ import (
 const ligatureChars = `-=<>!&|:/*.+~#%?^$@_[]{};w`
 
 func ligatable(c vt.Cell) bool {
-	return c.Width == 1 && c.Rune > ' ' && c.Rune < 0x7f && !isBoxRune(c.Rune)
+	return c.Width() == 1 && c.Rune > ' ' && c.Rune < 0x7f && !isBoxRune(c.Rune)
 }
 
 func (v *View) ligatures(cells []vt.Cell) []font.GID {

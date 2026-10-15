@@ -158,11 +158,11 @@ func (v *View) wordAt(pos vt.Pos) (vt.Pos, vt.Pos) {
 
 	start, end := pos.Col, pos.Col
 
-	for start > 0 && (isWordRune(row[start-1].Rune) || row[start-1].Width == 0) {
+	for start > 0 && (isWordRune(row[start-1].Rune) || row[start-1].Width() == 0) {
 		start--
 	}
 
-	for end < len(row)-1 && (isWordRune(row[end+1].Rune) || row[end+1].Width == 0) {
+	for end < len(row)-1 && (isWordRune(row[end+1].Rune) || row[end+1].Width() == 0) {
 		end++
 	}
 
@@ -221,7 +221,7 @@ func (v *View) updateHoverMods(m key.Modifiers) {
 	cols := make([]int, 0, len(row))
 
 	for i, c := range row {
-		if c.Width == 0 {
+		if c.Width() == 0 {
 			continue
 		}
 

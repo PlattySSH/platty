@@ -53,16 +53,32 @@ const (
 )
 
 type Cell struct {
-	Rune  rune
-	Width uint8
-	Attr  Attr
-	Fg    Color
-	Bg    Color
-	Link  uint16
+	Rune rune
+	Fg   Color
+	Bg   Color
+	Attr Attr
+	Link uint16
+}
+
+const (
+	attrWidthShift      = 14
+	attrWidthMask  Attr = 3 << attrWidthShift
+)
+
+func (c Cell) Width() uint8 {
+	return uint8(c.Attr >> attrWidthShift)
+}
+
+func (c *Cell) SetWidth(w uint8) {
+	c.Attr = c.Attr&^attrWidthMask | Attr(w)<<attrWidthShift
+}
+
+func (c Cell) Style() Attr {
+	return c.Attr &^ attrWidthMask
 }
 
 func blank(bg Color) Cell {
-	return Cell{Width: 1, Bg: bg}
+	return Cell{Bg: bg, Attr: 1 << attrWidthShift}
 }
 
 type CursorStyle uint8

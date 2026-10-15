@@ -70,7 +70,7 @@ func (t *Terminal) reflow(cols, rows int, cur *cursor) {
 		for len(cells) > 0 {
 			n := min(cols, len(cells))
 
-			if n < len(cells) && n > 1 && cells[n-1].Width == 2 {
+			if n < len(cells) && n > 1 && cells[n-1].Width() == 2 {
 				n--
 			}
 
@@ -150,7 +150,7 @@ func lineEmpty(l line) bool {
 func trimBlank(cells []Cell, keep int) []Cell {
 	n := len(cells)
 
-	for n > 0 && cells[n-1].Rune == 0 && cells[n-1].Bg == DefaultColor && cells[n-1].Attr == 0 {
+	for n > 0 && cells[n-1].Rune == 0 && cells[n-1].Bg == DefaultColor && cells[n-1].Style() == 0 {
 		n--
 	}
 
