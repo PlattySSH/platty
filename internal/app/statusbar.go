@@ -16,6 +16,7 @@ type paneStats struct {
 	have    bool
 	err     error
 	running bool
+	seen    time.Time
 }
 
 func (s *paneStats) get() (sshx.Stats, bool, error) {
@@ -27,6 +28,7 @@ func (s *paneStats) get() (sshx.Stats, bool, error) {
 func (a *App) watchStats(p *Pane) {
 	ps := &p.stats
 	ps.mu.Lock()
+	ps.seen = time.Now()
 
 	if ps.running {
 		ps.mu.Unlock()
@@ -38,16 +40,12 @@ func (a *App) watchStats(p *Pane) {
 
 	go func() {
 		var sm sshx.Sampler
-		defer func() {
-			ps.mu.Lock()
-			ps.running = false
-			ps.mu.Unlock()
-		}()
 
 		for {
 			c := p.sess.Client()
 
 			if c == nil {
+				ps.stop()
 				return
 			}
 
@@ -63,12 +61,35 @@ func (a *App) watchStats(p *Pane) {
 			a.Invalidate()
 
 			if err == sshx.ErrNoStats {
+				ps.stop()
 				return
 			}
 
 			time.Sleep(statsEvery)
+
+			if ps.stopIfHidden() {
+				return
+			}
 		}
 	}()
+}
+
+func (s *paneStats) stop() {
+	s.mu.Lock()
+	s.running = false
+	s.mu.Unlock()
+}
+
+func (s *paneStats) stopIfHidden() bool {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if time.Since(s.seen) <= 2*statsEvery {
+		return false
+	}
+
+	s.running = false
+	return true
 }
 
 func (c *chrome) statusBar(a *App, gtx C) D {

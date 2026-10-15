@@ -127,7 +127,7 @@ func (a *App) NewLocalTab(pr shell.Profile) {
 }
 
 func (a *App) newSSHPane(h vault.Host) *Pane {
-	a.vault.TouchHost(h.ID)
+	go a.vault.TouchHost(h.ID)
 
 	s := session.New(session.Options{
 		Kind:        session.SSH,
