@@ -6,7 +6,10 @@ import (
 	"net/url"
 )
 
-const maxLinks = 1<<16 - 1
+const (
+	maxLinks   = 16384
+	maxLinkLen = 2048
+)
 
 func WithClipboard(fn func(text string)) Option {
 	return func(t *Terminal) {
@@ -17,7 +20,7 @@ func WithClipboard(fn func(text string)) Option {
 func (t *Terminal) setLink(data []byte) {
 	_, uri, ok := bytes.Cut(data, []byte{';'})
 
-	if !ok || len(uri) == 0 {
+	if !ok || len(uri) == 0 || len(uri) > maxLinkLen {
 		t.cur.pen.Link = 0
 		return
 	}
@@ -32,7 +35,8 @@ func (t *Terminal) setLink(data []byte) {
 
 	if !ok {
 		if len(t.links) >= maxLinks {
-			t.links, t.linkIDs = nil, map[string]uint16{}
+			t.cur.pen.Link = 0
+			return
 		}
 
 		t.links = append(t.links, s)

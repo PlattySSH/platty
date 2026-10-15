@@ -3,6 +3,7 @@ package vt
 import (
 	"bytes"
 	"strconv"
+	"strings"
 
 	"github.com/rivo/uniseg"
 )
@@ -13,6 +14,7 @@ const (
 	oscCwd       = 7
 	oscLink      = 8
 	oscClipboard = 52
+	maxTitleLen  = 256
 )
 
 type charset uint8
@@ -50,7 +52,7 @@ func (t *Terminal) Print(r rune) {
 		r = decGraphics[r-0x60]
 	}
 
-	w := t.runeWidth(r)
+	w := min(t.runeWidth(r), t.cols)
 
 	if w == 0 {
 		return
@@ -212,7 +214,7 @@ func (t *Terminal) OSC(data []byte) {
 
 	switch code {
 	case oscTitleIcon, oscTitle:
-		t.title = string(rest)
+		t.title = strings.ToValidUTF8(string(rest[:min(len(rest), maxTitleLen)]), "")
 
 		if t.onTitle != nil {
 			t.onTitle(t.title)
