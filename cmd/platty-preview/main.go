@@ -17,6 +17,7 @@ import (
 	"gioui.org/unit"
 
 	platty "github.com/plattyssh/platty/internal/app"
+	"github.com/plattyssh/platty/internal/sshx"
 	"github.com/plattyssh/platty/internal/vault"
 )
 
@@ -63,8 +64,20 @@ func sampleVault(dir string) (*vault.Vault, error) {
 
 	v.CreateFolder("Clients/Acme")
 
-	v.SaveKey(vault.Key{Label: "laptop-ed25519", Type: "ssh-ed25519", Public: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOmV4t3hXl0dZqv0fTxS0QGQb9b3vGfNnJQ0q6f7wz9P laptop"})
-	v.SaveKey(vault.Key{Label: "github-deploy", Type: "ssh-rsa", Public: ""})
+	for _, label := range []string{"laptop", "github-deploy", "ci-runner", "prod-signed"} {
+		k, err := sshx.GenerateEd25519(label, "")
+
+		if err != nil {
+			return nil, err
+		}
+
+		if label == "prod-signed" {
+			k.Certificate = "ssh-ed25519-cert-v01@openssh.com"
+		}
+
+		v.SaveKey(k)
+	}
+
 	v.SaveSnippet(vault.Snippet{Label: "Restart nginx", Command: "sudo systemctl restart nginx"})
 	v.SaveSnippet(vault.Snippet{Label: "API logs", Command: "journalctl -u api -f --since '10 min ago'"})
 	v.SaveSnippet(vault.Snippet{Label: "Disk usage", Command: "df -h | sort -k5 -r | head"})

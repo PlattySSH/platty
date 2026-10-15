@@ -15,6 +15,7 @@ import (
 const (
 	demoUser     = "platty"
 	demoPassword = "hunter2"
+	createFlags  = 0x02 | 0x08 | 0x10
 )
 
 func listenDemo() (addr string, stop func(), err error) {
@@ -155,22 +156,26 @@ func serveSession(ch ssh.Channel, reqs <-chan *ssh.Request, mem *sftp.Handlers) 
 func demoFS() *sftp.Handlers {
 	h := sftp.InMemHandler()
 
-	for _, d := range []string{"/home", "/home/deploy", "/home/deploy/app", "/home/deploy/app/releases", "/home/deploy/logs", "/home/deploy/backups", "/home/deploy/.ssh", "/etc"} {
+	for _, d := range []string{"/.ssh", "/app", "/app/releases", "/backups", "/logs", "/nginx"} {
 		h.FileCmd.Filecmd(sftp.NewRequest("Mkdir", d))
 	}
 
 	files := map[string]int{
-		"/home/deploy/.bashrc":                  3771,
-		"/home/deploy/.profile":                 807,
-		"/home/deploy/docker-compose.yml":       1840,
-		"/home/deploy/deploy.sh":                2210,
-		"/home/deploy/README.md":                5120,
-		"/home/deploy/backup-2026-10-01.tar.gz": 48_234_112,
-		"/home/deploy/.env":                     412,
+		"/.bashrc":                  3771,
+		"/.env":                     412,
+		"/README.md":                5120,
+		"/backup-2026-10-01.tar.gz": 48_234_112,
+		"/deploy.sh":                2210,
+		"/docker-compose.yml":       1840,
+		"/Makefile":                 964,
+		"/app/releases/v1.4.2.tar":  12_582_912,
+		"/logs/api.log":             2_097_152,
 	}
 
 	for name, size := range files {
-		w, err := h.FilePut.Filewrite(sftp.NewRequest("Put", name))
+		req := sftp.NewRequest("Put", name)
+		req.Flags = createFlags
+		w, err := h.FilePut.Filewrite(req)
 
 		if err != nil {
 			continue
