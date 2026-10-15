@@ -151,8 +151,24 @@ func (s Settings) sanitized() Settings {
 
 func writeAtomic(path string, data []byte) error {
 	tmp := path + ".tmp"
+	f, err := os.OpenFile(tmp, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0o600)
 
-	if err := os.WriteFile(tmp, data, 0o600); err != nil {
+	if err != nil {
+		return err
+	}
+
+	_, err = f.Write(data)
+
+	if err == nil {
+		err = f.Sync()
+	}
+
+	if cerr := f.Close(); err == nil {
+		err = cerr
+	}
+
+	if err != nil {
+		os.Remove(tmp)
 		return err
 	}
 
