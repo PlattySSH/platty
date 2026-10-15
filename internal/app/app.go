@@ -3,6 +3,7 @@ package app
 import (
 	"fmt"
 	"image"
+	"net/url"
 	"os/exec"
 	"sync"
 	"sync/atomic"
@@ -391,8 +392,14 @@ func (a *App) applySettings() {
 	config.Save(a.settings)
 }
 
-func openURL(url string) {
-	exec.Command("rundll32", "url.dll,FileProtocolHandler", url).Start()
+func openURL(raw string) bool {
+	u, err := url.Parse(raw)
+
+	if err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" {
+		return false
+	}
+
+	return exec.Command("rundll32", "url.dll,FileProtocolHandler", u.String()).Start() == nil
 }
 
 func moveArea(gtx C, size image.Point) {

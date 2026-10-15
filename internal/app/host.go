@@ -203,7 +203,7 @@ func (a *App) DragOut(paths []string) {
 	})
 }
 
-func (a *App) OpenURL(url string) { openURL(url) }
+func (a *App) OpenURL(link string) { openURL(link) }
 
 func (a *App) syncLive() {
 	a.hideAddrs.Store(a.settings.HideAddresses)

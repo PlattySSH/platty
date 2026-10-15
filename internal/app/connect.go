@@ -72,7 +72,11 @@ func (a *App) termSettings() termview.Settings {
 func (a *App) newPane(s *session.Session) *Pane {
 	p := &Pane{sess: s, icon: icons.Terminal, color: a.th().TextMuted}
 	p.view = termview.New(s, a.kit, a.glyphs, a.termSettings())
-	p.view.OnOpenURL = openURL
+	p.view.OnOpenURL = func(link string) {
+		if !openURL(link) {
+			a.toasts.Error("Link not opened", "Platty only opens http and https links.")
+		}
+	}
 	p.view.OnAction = func(action string) { a.paneAction(p, action) }
 	p.view.OnFocus = func() { a.focusPane(p) }
 	p.view.Extras = func() []termview.Extra { return a.paneExtras(p) }

@@ -177,7 +177,7 @@ type hoverLink struct {
 	pos    f32.Point
 }
 
-var urlRe = regexp.MustCompile(`(?:https?|ftp|file)://[^\s"'<>\x60]+`)
+var urlRe = regexp.MustCompile(`https?://[^\s"'<>\x60]+`)
 
 func (v *View) updateHover(p f32.Point, m key.Modifiers) {
 	v.hover.pos = p
