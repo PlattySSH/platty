@@ -47,6 +47,7 @@ func (a *App) ActiveSession() *session.Session {
 func (a *App) UpdateSettings(s config.Settings) {
 	themeChanged := s.Theme != a.settings.Theme
 	a.settings = s
+	a.syncLive()
 
 	if themeChanged {
 		a.SetTheme(s.Theme)
@@ -152,7 +153,7 @@ func (a *App) newTunnels() *tunnel.Manager {
 			return nil, errRuleWithoutHost
 		}
 
-		keepAlive := time.Duration(a.settings.KeepAlive) * time.Second
+		keepAlive := time.Duration(a.keepAlive.Load()) * time.Second
 		return sshx.Dial(ctx, a.target(h, 0), a.vault, a.hooks(), keepAlive)
 	})
 	t.OnChange(a.Invalidate)
@@ -203,3 +204,8 @@ func (a *App) DragOut(paths []string) {
 }
 
 func (a *App) OpenURL(url string) { openURL(url) }
+
+func (a *App) syncLive() {
+	a.hideAddrs.Store(a.settings.HideAddresses)
+	a.keepAlive.Store(int64(a.settings.KeepAlive))
+}

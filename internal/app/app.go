@@ -86,7 +86,8 @@ type App struct {
 
 	maximized bool
 	closing   bool
-	autoTrust bool
+	hideAddrs atomic.Bool
+	keepAlive atomic.Int64
 	vaultRev  uint64
 	mu        sync.Mutex
 }
@@ -106,6 +107,7 @@ func Run() error {
 		drops:    make(chan []string, 8),
 		clips:    make(chan string, 4),
 	}
+	a.syncLive()
 	a.shaper, a.face = fonts.Load()
 	a.glyphs, _ = fonts.Glyphs(a.settings.TerminalFont)
 	a.kit = kit.New(theme.New(a.settings.Theme), a.shaper)

@@ -142,7 +142,7 @@ func (a *App) newSSHPane(h vault.Host) *Pane {
 
 			return s
 		},
-		KeepAlive:  time.Duration(a.settings.KeepAlive) * time.Second,
+		KeepAlive:  time.Duration(a.keepAlive.Load()) * time.Second,
 		Cols:       120,
 		Rows:       32,
 		Scrollback: a.settings.Scrollback,
@@ -190,10 +190,6 @@ func (a *App) target(h vault.Host, depth int) sshx.Target {
 func (a *App) hooks() sshx.Hooks {
 	return sshx.Hooks{
 		ConfirmHostKey: func(info sshx.HostKeyInfo) bool {
-			if a.autoTrust {
-				return true
-			}
-
 			r := a.ask(&prompt{kind: promptHostKey, hostKey: info})
 			return r.ok
 		},
@@ -411,7 +407,7 @@ func (p *prompt) Layout(gtx C) bool {
 }
 
 func (a *App) redactor() func(string) string {
-	if !a.settings.HideAddresses {
+	if !a.hideAddrs.Load() {
 		return nil
 	}
 
