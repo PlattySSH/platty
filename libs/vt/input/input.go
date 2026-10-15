@@ -169,7 +169,14 @@ func EncodePaste(s string, md vt.Modes) []byte {
 		return []byte(s)
 	}
 
-	s = strings.ReplaceAll(s, pasteEnd, "")
+	s = strings.Map(func(r rune) rune {
+		if r == 0x1b || (r >= 0x80 && r <= 0x9f) {
+			return -1
+		}
+
+		return r
+	}, s)
+
 	return []byte(pasteStart + s + pasteEnd)
 }
 
