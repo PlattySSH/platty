@@ -127,7 +127,7 @@ func (p *Panel) uploadFile(a core.Host, c *sftpConn, cwd string) {
 }
 
 func (p *Panel) downloadFile(a core.Host, c *sftpConn, src string) {
-	name := path.Base(src)
+	name := transfer.SafeName(path.Base(src))
 	w, err := a.Explorer().CreateFile(name)
 
 	if err != nil {
@@ -145,7 +145,7 @@ func (p *Panel) downloadFolder(a core.Host, c *sftpConn, src string) {
 		return
 	}
 
-	name := path.Base(src)
+	name := transfer.SafeName(path.Base(src))
 	dst := unique(filepath.Join(home, "Downloads", name))
 
 	p.enqueue(a, c, &transfer.Job{Kind: transfer.Download, Name: name, Remote: src, Local: dst}, "", func(j *transfer.Job) {
@@ -179,7 +179,7 @@ func (p *Panel) edit(a core.Host, c *sftpConn, src, cwd string) {
 		return
 	}
 
-	name := path.Base(src)
+	name := transfer.SafeName(path.Base(src))
 	local := filepath.Join(dir, name)
 
 	p.enqueue(a, c, &transfer.Job{Kind: transfer.Download, Name: name, Remote: src, Local: local}, "", func(*transfer.Job) {
@@ -189,7 +189,7 @@ func (p *Panel) edit(a core.Host, c *sftpConn, src, cwd string) {
 			return
 		}
 
-		if err := open.File(local); err != nil {
+		if err := open.Edit(local); err != nil {
 			a.Toasts().Error("Couldn't open "+name, err.Error())
 			return
 		}

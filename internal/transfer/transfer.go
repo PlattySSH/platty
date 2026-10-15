@@ -34,7 +34,10 @@ const (
 
 const parallel = 2
 
-var ErrCancelled = errors.New("cancelled")
+var (
+	ErrCancelled     = errors.New("cancelled")
+	errOutsideFolder = errors.New("the server listed a file outside the folder")
+)
 
 type Job struct {
 	ID     int
@@ -344,8 +347,11 @@ func (j *Job) download() error {
 			return err
 		}
 
-		rel := walk.Path()[len(j.Remote):]
-		dst := filepath.Join(j.Local, filepath.FromSlash(rel))
+		dst, ok := localPath(j.Local, j.Remote, walk.Path())
+
+		if !ok {
+			return errOutsideFolder
+		}
 
 		if walk.Stat().IsDir() {
 			if err := os.MkdirAll(dst, 0o755); err != nil {

@@ -83,7 +83,7 @@ func (p *Panel) dragOut(a core.Host, c *sftpConn, cwd string, e sshx.Entry) {
 		return
 	}
 
-	local := filepath.Join(dir, e.Name)
+	local := filepath.Join(dir, transfer.SafeName(e.Name))
 	p.enqueue(a, c, &transfer.Job{Kind: transfer.Download, Name: e.Name, Remote: path.Join(cwd, e.Name), Local: local}, "", func(*transfer.Job) {
 		a.DragOut([]string{local})
 		time.AfterFunc(dragOutCleanup, func() { os.RemoveAll(dir) })
