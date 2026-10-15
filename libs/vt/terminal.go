@@ -1,6 +1,7 @@
 package vt
 
 import (
+	"fmt"
 	"sync"
 	"sync/atomic"
 
@@ -149,14 +150,34 @@ func (t *Terminal) resetTabs() {
 func (t *Terminal) Write(p []byte) (int, error) {
 	for rest := p; len(rest) > 0; {
 		n := min(len(rest), writeChunk)
-		t.mu.Lock()
-		t.parser.Feed(rest[:n])
-		t.mu.Unlock()
+		err := t.feed(rest[:n])
 		t.gen.Add(1)
+
+		if err != nil {
+			return len(p) - len(rest), err
+		}
+
 		rest = rest[n:]
 	}
 
 	return len(p), nil
+}
+
+func (t *Terminal) feed(p []byte) (err error) {
+	t.mu.Lock()
+
+	defer func() {
+		if r := recover(); r != nil {
+			t.parser = parser.New(t)
+			t.reset()
+			err = fmt.Errorf("vt: %v", r)
+		}
+
+		t.mu.Unlock()
+	}()
+
+	t.parser.Feed(p)
+	return nil
 }
 
 func (t *Terminal) Generation() uint64 {

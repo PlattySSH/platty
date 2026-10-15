@@ -405,7 +405,10 @@ func (s *Session) readLoop(gen int, t Transport) {
 		n, err := t.Read(buf)
 
 		if n > 0 {
-			s.term.Write(buf[:n])
+			if _, werr := s.term.Write(buf[:n]); werr != nil {
+				s.print("\r\n" + styleError + "Platty reset this terminal after an internal error." + styleReset + "\r\n")
+			}
+
 			s.writeLog(buf[:n])
 			s.opts.OnChange()
 		}
