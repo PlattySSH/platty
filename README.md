@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="assets/mascot/sol-256.png" alt="Platty" width="140" />
+<img src="https://raw.githubusercontent.com/PlattySSH/branding/main/mascot/sol-256.png" alt="Platty" width="140" />
 
 # Platty
 
@@ -15,7 +15,7 @@ snippets**) into one calm, monochrome window.
 
 ---
 
-![Platty](docs/screens/terminal-carbon.png)
+![Platty](https://raw.githubusercontent.com/PlattySSH/branding/main/screens/terminal-carbon.png)
 
 ## ✨ Features
 
@@ -58,9 +58,9 @@ snippets**) into one calm, monochrome window.
 
 | | |
 |---|---|
-| ![Home](docs/screens/welcome-carbon.png) | ![Search Everywhere](docs/screens/palette-carbon.png) |
-| ![SSH + SFTP](docs/screens/ssh-sftp-carbon.png) | ![Host editor](docs/screens/host-editor-carbon.png) |
-| ![Settings](docs/screens/settings-carbon.png) | ![Keychain](docs/screens/keychain-graphite.png) |
+| ![Home](https://raw.githubusercontent.com/PlattySSH/branding/main/screens/welcome-carbon.png) | ![Search Everywhere](https://raw.githubusercontent.com/PlattySSH/branding/main/screens/palette-carbon.png) |
+| ![SSH + SFTP](https://raw.githubusercontent.com/PlattySSH/branding/main/screens/ssh-sftp-carbon.png) | ![Host editor](https://raw.githubusercontent.com/PlattySSH/branding/main/screens/host-editor-carbon.png) |
+| ![Settings](https://raw.githubusercontent.com/PlattySSH/branding/main/screens/settings-carbon.png) | ![Keychain](https://raw.githubusercontent.com/PlattySSH/branding/main/screens/keychain-graphite.png) |
 
 ## 🧱 Tech stack
 
@@ -97,7 +97,6 @@ Settings, the vault and the crash log are kept in `%AppData%\Platty`.
 ### Development
 
 ```sh
-go run ./cmd/platty-preview -o docs/screens    # regenerate the screenshots
 ./packaging/build.ps1 -Version 0.1.0          # portable zip in dist/ (add -Installer for the setup)
 ```
 
@@ -124,18 +123,14 @@ profiles to that folder every few seconds.
 
 - [Website](https://plattyssh.github.io): the landing page and documentation.
 - [Changelog](CHANGELOG.md): what changed in each version.
-- [Sol, the mascot](assets/mascot/README.md): the logo and how its files are exported.
+- [Branding](https://github.com/PlattySSH/branding): Sol, the logo and the screenshots.
 - [Third-party notices](THIRD_PARTY_NOTICES.md): icon and font licenses.
 
 ## 📂 Structure
 
 ```
 platty/
-├── cmd/
-│   ├── platty/            # the app
-│   ├── platty-preview/    # renders screens to PNG without a window
-│   ├── platty-snap/       # renders a program's output with the terminal engine
-│   └── platty-mascot/     # exports Sol to PNG, GIF and ICO
+├── cmd/platty/            # the app
 ├── internal/
 │   ├── app/               # the window: sidebar, tabs, split panes and wiring
 │   │   ├── core/          # interfaces between the window and its parts
@@ -151,9 +146,7 @@ platty/
 │   ├── vt/                # terminal emulator (parser/, input/)
 │   ├── conpty/            # Windows pseudo-consoles
 │   └── glyphs/            # glyph rasterizer
-├── packaging/             # release script and installer
-├── assets/mascot/         # Sol, the logo
-└── docs/                  # screenshots
+└── packaging/             # release script, installer and icon
 ```
 
 The libraries in `libs/` are also published as their own repositories under
