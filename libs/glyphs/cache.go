@@ -22,6 +22,11 @@ func (g *Glyph) Empty() bool {
 	return g == nil || (g.Mask == nil && g.Color == nil)
 }
 
+const (
+	maxGlyphs    = 8192
+	maxLigatures = 4096
+)
+
 type Metrics struct {
 	CellW, CellH int
 	Baseline     int
@@ -88,6 +93,11 @@ func (c *Cache) Get(r rune, style Style, cells int) *Glyph {
 	g = c.render(r, style, cells)
 
 	c.mu.Lock()
+
+	if len(c.glyphs) >= maxGlyphs {
+		clear(c.glyphs)
+	}
+
 	c.glyphs[k] = g
 	c.mu.Unlock()
 	return g

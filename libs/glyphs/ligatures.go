@@ -39,6 +39,11 @@ func (c *Cache) Ligatures(text []rune, style Style) []font.GID {
 	}
 
 	gids := c.shape(text, style)
+
+	if len(c.ligs) >= maxLigatures {
+		clear(c.ligs)
+	}
+
 	c.ligs[key] = gids
 	return gids
 }
@@ -96,6 +101,11 @@ func (c *Cache) GetGlyph(gid font.GID, style Style) *Glyph {
 	g = c.renderFace(c.styleFace(style), gid, style, 1)
 
 	c.mu.Lock()
+
+	if len(c.byGID) >= maxGlyphs {
+		clear(c.byGID)
+	}
+
 	c.byGID[k] = g
 	c.mu.Unlock()
 	return g
