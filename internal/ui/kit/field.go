@@ -137,7 +137,7 @@ func (k *Kit) FormRow(gtx C, label string, labelWidth unit.Dp, w W) D {
 func (k *Kit) Toggle(gtx C, b *widget.Bool) D {
 	th := k.Th
 	t := k.Animated(gtx, Key(b, keyActive), B2F(b.Value), Normal)
-	hv := k.Hover(gtx, b, b.Hovered())
+	hv := k.Hover(gtx, Key(b, keyHover), b.Hovered())
 
 	return b.Layout(gtx, func(gtx C) D {
 		w, h := gtx.Dp(36), gtx.Dp(20)
@@ -233,7 +233,7 @@ func (k *Kit) Segmented(gtx C, s *Segmented, options []string) D {
 
 			dims := s.clks[i].Layout(gtx, func(gtx C) D {
 				selected := s.Value == i
-				hv := k.Hover(gtx, &s.clks[i], s.clks[i].Hovered())
+				hv := k.Hover(gtx, Key(&s.clks[i], keyHover), s.clks[i].Hovered())
 				on := k.Animated(gtx, Key(&s.clks[i], keyActive), B2F(selected), Normal)
 				fg := Lerp(Lerp(th.TextMuted, th.Text, hv), th.Text, on)
 				gtx.Constraints.Min.Y = h

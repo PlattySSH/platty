@@ -97,7 +97,7 @@ func (k *Kit) Row(gtx C, r *Row, o RowOpts, w W) D {
 		width := gtx.Constraints.Max.X
 		size := image.Pt(width, height)
 
-		hv := k.Hover(gtx, &r.clk, r.clk.Hovered())
+		hv := k.Hover(gtx, Key(&r.clk, keyHover), r.clk.Hovered())
 		sel := k.Animated(gtx, Key(r, keyActive), B2F(o.Selected), Normal)
 		selColor := th.Inactive
 

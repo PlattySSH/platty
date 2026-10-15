@@ -22,6 +22,7 @@ type folderEdit struct {
 func (p *Panel) newFolder(a core.Host, parent string) {
 	p.startEdit(a, parent, "", "")
 	p.collapsed[parent] = false
+	p.gen++
 }
 
 func (p *Panel) renameFolder(a core.Host, path string) {

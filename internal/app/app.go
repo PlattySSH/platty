@@ -277,6 +277,8 @@ func (a *App) Open(m core.Modal) {
 	a.modal = m
 }
 
+var shortcuts = shortcutFilters()
+
 func shortcutFilters() []event.Filter {
 	cs := key.ModCtrl | key.ModShift
 	return []event.Filter{
@@ -307,7 +309,7 @@ func shortcutFilters() []event.Filter {
 
 func (a *App) handleShortcuts(gtx C) {
 	for {
-		ev, ok := gtx.Event(shortcutFilters()...)
+		ev, ok := gtx.Event(shortcuts...)
 
 		if !ok {
 			return

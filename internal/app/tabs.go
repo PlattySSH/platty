@@ -176,7 +176,7 @@ func (c *chrome) moreTabsButton(a *App, gtx C, hidden int) D {
 	k := a.kit
 	th := a.th()
 	return c.moreTabs.Layout(gtx, func(gtx C) D {
-		hv := k.Hover(gtx, &c.moreTabs, c.moreTabs.Hovered())
+		hv := k.Hover(gtx, kit.Key(&c.moreTabs, 0), c.moreTabs.Hovered())
 		size := image.Pt(gtx.Dp(44), gtx.Dp(28))
 		bg := kit.Lerp(kit.Fade(th.Hover, hv*2), th.Selection, kit.B2F(c.tabMenu.IsOpen()))
 

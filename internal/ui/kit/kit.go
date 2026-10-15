@@ -35,7 +35,7 @@ type Kit struct {
 	Shaper *text.Shaper
 	Mat    *material.Theme
 
-	anims  map[any]*Anim
+	anims  map[animKey]*Anim
 	pruned time.Time
 
 	pointer f32.Point

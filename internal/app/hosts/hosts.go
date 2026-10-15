@@ -96,12 +96,24 @@ type Panel struct {
 	moved    bool
 	pressAt  map[*widget.Draggable]*f32.Point
 	edit     folderEdit
+
+	gen      int
+	itemsKey itemsKey
+	itemsOK  bool
+	cached   []hostItem
 }
 
 type groupRow struct {
 	row  kit.Row
 	drag widget.Draggable
 	drop bool
+}
+
+type itemsKey struct {
+	gen    int
+	edit   bool
+	parent string
+	path   string
 }
 
 type hostItem struct {
@@ -123,6 +135,7 @@ func (p *Panel) Refresh() {
 	d := a.Vault().Snapshot()
 	p.hosts = d.Hosts
 	p.folders = d.AllFolders()
+	p.gen++
 	sort.Slice(p.hosts, func(i, j int) bool {
 		return strings.ToLower(p.hosts[i].Title()) < strings.ToLower(p.hosts[j].Title())
 	})
@@ -191,6 +204,17 @@ func (p *Panel) Actions(gtx C) D {
 }
 
 func (p *Panel) items() []hostItem {
+	key := itemsKey{p.gen, p.edit.active, p.edit.parent, p.edit.path}
+
+	if p.itemsOK && key == p.itemsKey {
+		return p.cached
+	}
+
+	p.cached, p.itemsKey, p.itemsOK = p.buildItems(), key, true
+	return p.cached
+}
+
+func (p *Panel) buildItems() []hostItem {
 	children := map[string][]string{}
 
 	for _, f := range p.folders {
@@ -278,6 +302,7 @@ func (p *Panel) groupHeader(a core.Host, gtx C, it hostItem) D {
 
 	if ev.Click && !ev.DoubleClick {
 		p.collapsed[it.folder] = !p.collapsed[it.folder]
+		p.gen++
 	}
 
 	if ev.Context {

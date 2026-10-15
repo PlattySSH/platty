@@ -388,7 +388,11 @@ func (w *workspace) layout(a *App, gtx C) D {
 
 	a.welcome.Hidden = true
 
-	t.rects = map[*Pane]image.Rectangle{}
+	if t.rects == nil {
+		t.rects = map[*Pane]image.Rectangle{}
+	}
+
+	clear(t.rects)
 
 	if v := t.appear.Animate(gtx, 1, kit.Slow); v < 1 {
 		defer paint.PushOpacity(gtx.Ops, v).Pop()

@@ -233,7 +233,7 @@ func (k *Kit) menuItem(gtx C, clk *widget.Clickable, it MenuItem, active bool) D
 			fg = th.TextFaint
 		}
 
-		hv := k.Hover(gtx, clk, (clk.Hovered() || active) && !it.Disabled)
+		hv := k.Hover(gtx, Key(clk, keyHover), (clk.Hovered() || active) && !it.Disabled)
 		bg := Fade(th.Selection, hv)
 
 		if hv > 0 && !it.Disabled && !it.Danger {

@@ -360,7 +360,7 @@ func (c *chrome) searchBar(a *App, gtx C) D {
 		r := image.Rectangle{Max: size}
 		radius := gtx.Dp(th.RadiusSmall)
 
-		hv := k.Hover(gtx, &c.search, c.search.Hovered())
+		hv := k.Hover(gtx, kit.Key(&c.search, 0), c.search.Hovered())
 		kit.RRect(gtx, r, radius, kit.Lerp(kit.Fade(th.Hover, 1.4), th.Selection, hv))
 
 		gtx.Constraints = layout.Exact(size)

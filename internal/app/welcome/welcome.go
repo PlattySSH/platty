@@ -32,6 +32,18 @@ type Screen struct {
 	newHost widget.Clickable
 	import_ widget.Clickable
 	recent  map[string]*kit.Row
+
+	hosts    []vault.Host
+	hostsRev uint64
+	hostsOK  bool
+}
+
+func (w *Screen) recentHosts(v *vault.Vault) []vault.Host {
+	if rev := v.Revision(); !w.hostsOK || rev != w.hostsRev {
+		w.hosts, w.hostsRev, w.hostsOK = RecentHosts(v, 5), rev, true
+	}
+
+	return w.hosts
 }
 
 func RecentHosts(v *vault.Vault, n int) []vault.Host {
@@ -72,7 +84,7 @@ func (w *Screen) Layout(gtx C) D {
 		a.ImportSSHConfig()
 	}
 
-	recent := RecentHosts(a.Vault(), 5)
+	recent := w.recentHosts(a.Vault())
 	command := "ssh user@server"
 
 	if len(recent) > 0 {

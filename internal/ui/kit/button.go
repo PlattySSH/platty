@@ -32,7 +32,7 @@ const (
 
 func (k *Kit) Button(gtx C, clk *widget.Clickable, kind ButtonKind, ic *icons.Icon, label string) D {
 	th := k.Th
-	h := k.Hover(gtx, clk, clk.Hovered())
+	h := k.Hover(gtx, Key(clk, keyHover), clk.Hovered())
 	p := k.Animated(gtx, Key(clk, keyPress), B2F(clk.Pressed()), Fast)
 
 	var bg, fg, line color.NRGBA
@@ -101,7 +101,7 @@ func (k *Kit) IconButton(gtx C, clk *widget.Clickable, ic *icons.Icon, active bo
 
 func (k *Kit) IconButtonSized(gtx C, clk *widget.Clickable, ic *icons.Icon, active bool, box, size unit.Dp, fg color.NRGBA) D {
 	th := k.Th
-	h := k.Hover(gtx, clk, clk.Hovered())
+	h := k.Hover(gtx, Key(clk, keyHover), clk.Hovered())
 	a := k.Animated(gtx, Key(clk, keyActive), B2F(active), Normal)
 
 	bg := Lerp(Fade(th.Hover, h), th.Selection, a)
@@ -125,7 +125,7 @@ func (k *Kit) IconButtonSized(gtx C, clk *widget.Clickable, ic *icons.Icon, acti
 }
 
 func (k *Kit) Link(gtx C, clk *widget.Clickable, label string) D {
-	h := k.Hover(gtx, clk, clk.Hovered())
+	h := k.Hover(gtx, Key(clk, keyHover), clk.Hovered())
 	return clk.Layout(gtx, func(gtx C) D {
 		c := Lerp(k.Th.TextMuted, k.Th.Text, h)
 		dims := k.Label(gtx, TextStyle{Color: c, Weight: font.Medium}, label)

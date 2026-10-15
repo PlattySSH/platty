@@ -86,20 +86,20 @@ type animKey struct {
 }
 
 const (
-	keyHover uint8 = iota
-	keyPress
+	keyPress uint8 = iota + 1
 	keyActive
 	keyFocus
 	keyOpen
 	keyPos
 	keyWidth
+	keyHover uint8 = 255
 )
 
-func Key(owner any, kind uint8) any {
+func Key(owner any, kind uint8) animKey {
 	return animKey{owner, kind}
 }
 
-func (k *Kit) Hover(gtx C, key any, on bool) float32 {
+func (k *Kit) Hover(gtx C, key animKey, on bool) float32 {
 	a := k.anim(gtx, key)
 	t := float32(0)
 
@@ -112,9 +112,9 @@ func (k *Kit) Hover(gtx C, key any, on bool) float32 {
 
 const animTTL = 30 * time.Second
 
-func (k *Kit) anim(gtx C, key any) *Anim {
+func (k *Kit) anim(gtx C, key animKey) *Anim {
 	if k.anims == nil {
-		k.anims = map[any]*Anim{}
+		k.anims = map[animKey]*Anim{}
 	}
 
 	k.pruneAnims(gtx.Now)
@@ -130,7 +130,7 @@ func (k *Kit) anim(gtx C, key any) *Anim {
 	return a
 }
 
-func (k *Kit) Animated(gtx C, key any, target float32, dur time.Duration) float32 {
+func (k *Kit) Animated(gtx C, key animKey, target float32, dur time.Duration) float32 {
 	return k.anim(gtx, key).Animate(gtx, target, dur)
 }
 

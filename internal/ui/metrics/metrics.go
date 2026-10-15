@@ -157,7 +157,7 @@ func (b *Bar) item(gtx C, k *kit.Kit, hover *widget.Clickable, m metric) D {
 	value := kit.TextStyle{Size: th.TextSizeSmall, Color: th.Text}
 
 	dims := hover.Layout(gtx, func(gtx C) D {
-		hv := k.Hover(gtx, hover, hover.Hovered())
+		hv := k.Hover(gtx, kit.Key(hover, 0), hover.Hovered())
 		return layout.Inset{Left: 6, Right: 10}.Layout(gtx, func(gtx C) D {
 			gtx.Constraints.Min.Y = gtx.Dp(Height)
 			return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
