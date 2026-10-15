@@ -4,9 +4,15 @@ import (
 	"bufio"
 	"bytes"
 	"errors"
+	"io"
 	"strconv"
 	"strings"
 	"time"
+)
+
+const (
+	maxStatsOutput = 256 * 1024
+	maxStatsText   = 128
 )
 
 const statsCommand = `cat /proc/stat /proc/meminfo /proc/uptime /proc/loadavg /proc/net/dev 2>/dev/null; echo '@@df'; df -kP / 2>/dev/null | tail -1; echo '@@os'; uname -sr; hostname; grep -m1 PRETTY_NAME /etc/os-release 2>/dev/null`
@@ -49,7 +55,17 @@ func (s *Sampler) Sample(c *Client) (Stats, error) {
 	}
 
 	defer sess.Close()
-	out, err := sess.Output(statsCommand)
+	stdout, err := sess.StdoutPipe()
+
+	if err != nil {
+		return Stats{}, err
+	}
+
+	if err := sess.Start(statsCommand); err != nil {
+		return Stats{}, err
+	}
+
+	out, err := io.ReadAll(io.LimitReader(stdout, maxStatsOutput))
 
 	if err != nil && len(out) == 0 {
 		return Stats{}, err
@@ -110,11 +126,11 @@ func parseStats(out []byte) (*raw, error) {
 		case section == "@@os":
 			switch {
 			case strings.HasPrefix(line, "PRETTY_NAME="):
-				r.stats.OS = strings.Trim(strings.TrimPrefix(line, "PRETTY_NAME="), `"`)
+				r.stats.OS = clip(strings.Trim(strings.TrimPrefix(line, "PRETTY_NAME="), `"`))
 			case osLine == 0:
-				r.stats.Kernel = line
+				r.stats.Kernel = clip(line)
 			case osLine == 1:
-				r.stats.Hostname = line
+				r.stats.Hostname = clip(line)
 			}
 
 			osLine++
@@ -131,13 +147,13 @@ func parseStats(out []byte) (*raw, error) {
 			}
 		case strings.HasPrefix(f[0], "cpu"):
 			r.stats.Cores++
-		case f[0] == "MemTotal:":
+		case len(f) >= 2 && f[0] == "MemTotal:":
 			r.stats.MemTotal = atou(f[1]) * 1024
-		case f[0] == "MemAvailable:":
+		case len(f) >= 2 && f[0] == "MemAvailable:":
 			memAvail = atou(f[1]) * 1024
-		case f[0] == "SwapTotal:":
+		case len(f) >= 2 && f[0] == "SwapTotal:":
 			r.stats.SwapTotal = atou(f[1]) * 1024
-		case f[0] == "SwapFree:":
+		case len(f) >= 2 && f[0] == "SwapFree:":
 			swapFree = atou(f[1]) * 1024
 		case len(f) == 2 && isFloat(f[0]) && isFloat(f[1]):
 			secs, _ := strconv.ParseFloat(f[0], 64)
@@ -186,4 +202,12 @@ func atou(s string) uint64 {
 func isFloat(s string) bool {
 	_, err := strconv.ParseFloat(s, 64)
 	return err == nil && strings.Contains(s, ".")
+}
+
+func clip(s string) string {
+	if r := []rune(s); len(r) > maxStatsText {
+		return string(r[:maxStatsText])
+	}
+
+	return s
 }
