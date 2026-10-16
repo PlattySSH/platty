@@ -28,7 +28,8 @@ snippets**) into one calm, monochrome window.
 - **Selection, copy and paste**, bracketed paste, **search in the scrollback**, Ctrl+click
   links and mouse reporting for vim and htop.
 - **Tabs and split panes** that come back when you reopen Platty; rename, reorder, duplicate,
-  and type into every pane of a tab at once (broadcast). Local profiles: PowerShell, cmd,
+  and type into several panes of a tab at once (broadcast), choosing which ones receive the
+  input. Local profiles: PowerShell, cmd,
   WSL and Git Bash.
 - **Font ligatures** (JetBrains Mono, Fira Code), clickable OSC 8 links, OSC 52 copy and
   OSC 7 working folder; **save a session to a log file** as plain text.
@@ -111,6 +112,7 @@ profiles to that folder every few seconds.
 | New terminal / new host | Ctrl+Shift+T / Ctrl+Shift+N |
 | Split right / down | Ctrl+Shift+D / Ctrl+Shift+E |
 | Close pane | Ctrl+Shift+W |
+| Broadcast input to the tab | Ctrl+Shift+B |
 | Move focus between panes | Alt+Arrows |
 | Switch tab | Ctrl+Tab / Ctrl+Shift+Tab |
 | Sidebar / tool panels | Alt+1 / Alt+2 … Alt+6 |
