@@ -15,6 +15,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"time"
 )
@@ -115,11 +116,15 @@ func Check(ctx context.Context, current string) (Release, bool, error) {
 }
 
 func (r Release) assetName(k Kind) string {
-	if k == Installer {
+	if k != Installer {
+		return "platty-" + r.Version + "-windows-" + runtime.GOARCH + ".zip"
+	}
+
+	if runtime.GOARCH == "amd64" {
 		return "platty-" + r.Version + "-setup.exe"
 	}
 
-	return "platty-" + r.Version + "-windows-amd64.zip"
+	return "platty-" + r.Version + "-" + runtime.GOARCH + "-setup.exe"
 }
 
 func (r Release) Download(ctx context.Context, k Kind, dir string, progress func(done, total int64)) (string, error) {
