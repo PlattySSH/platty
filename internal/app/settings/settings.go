@@ -185,8 +185,14 @@ func (d *Dialog) collect(a core.Host) config.Settings {
 
 func (d *Dialog) commit(a core.Host) {
 	s := d.collect(a)
+
+	if s == d.s {
+		return
+	}
+
 	a.UpdateSettings(s)
 	d.s = s
+	a.Toasts().Success("Settings saved", "Your changes are applied.")
 }
 
 func (d *Dialog) Layout(gtx C) bool {
