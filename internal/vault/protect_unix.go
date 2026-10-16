@@ -10,11 +10,6 @@ import (
 	"github.com/plattyssh/platty/internal/platform/keyring"
 )
 
-const (
-	OSOwner = "system keyring"
-	OSName  = "keyring"
-)
-
 var keyringRef = []byte("keyring:")
 
 func protect(plain []byte) ([]byte, error) {
