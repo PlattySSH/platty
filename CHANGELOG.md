@@ -2,6 +2,12 @@
 
 All notable changes to Platty are listed here. Versions follow [Semantic Versioning](https://semver.org).
 
+## Unreleased
+
+### Windows on ARM
+- Native ARM64 builds: an installer and a portable `.zip` next to the x64 ones.
+- The updater downloads the build that matches the running architecture.
+
 ## 0.1.1-beta.2 (2026-10-16)
 
 Choose which panes receive broadcast input, so test and production sessions can share a tab safely.

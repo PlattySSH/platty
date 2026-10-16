@@ -77,8 +77,8 @@ snippets**) into one calm, monochrome window.
 
 ### Download
 
-Grab the installer or the portable `.zip` from [Releases](https://github.com/PlattySSH/platty/releases).
-Platty needs **Windows 10 1809** or later. Beta builds aren't code-signed yet, so Windows may
+Grab the installer or the portable `.zip` from [Releases](https://github.com/PlattySSH/platty/releases);
+on Windows on ARM, pick the `arm64` files for a native build. Platty needs **Windows 10 1809** or later. Beta builds aren't code-signed yet, so Windows may
 ask you to confirm before running them.
 
 ### Build from source
@@ -160,6 +160,7 @@ The libraries in `libs/` are also published as their own repositories under
 | System | Status |
 |---|---|
 | Windows 10 (1809+) and 11, x64 | ✅ Supported |
+| Windows 11 on ARM64 | 🧪 Native builds, not yet tested on ARM hardware |
 | macOS (Apple Silicon and Intel) | 🛠️ Planned, see [#1](https://github.com/PlattySSH/platty/issues/1) |
 | Linux (X11 and Wayland) | 🛠️ Planned, see [#2](https://github.com/PlattySSH/platty/issues/2) |
 
