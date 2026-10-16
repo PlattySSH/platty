@@ -116,6 +116,10 @@ func Check(ctx context.Context, current string) (Release, bool, error) {
 }
 
 func (r Release) assetName(k Kind) string {
+	if runtime.GOOS != "windows" {
+		return ""
+	}
+
 	if k != Installer {
 		return "platty-" + r.Version + "-windows-" + runtime.GOARCH + ".zip"
 	}
