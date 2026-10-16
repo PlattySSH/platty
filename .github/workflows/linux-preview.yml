@@ -9,7 +9,7 @@ permissions:
 
 jobs:
   preview:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
 
@@ -25,14 +25,20 @@ jobs:
           echo "BUILD=${GITHUB_REF_NAME#linux-preview-}" >> "$GITHUB_ENV"
           echo "VERSION=0.1.1-dev.linux.${GITHUB_REF_NAME#linux-preview-}" >> "$GITHUB_ENV"
 
-      - name: Build and package
+      - name: Build
+        run: go build -trimpath -ldflags "-s -w -X github.com/plattyssh/platty/internal/version.Version=$VERSION" -o build/platty ./cmd/platty
+
+      - name: Package AppImage
+        env:
+          APPIMAGE_EXTRACT_AND_RUN: 1
         run: |
-          name="platty-linux-preview-$BUILD-amd64"
-          mkdir -p "dist/$name"
-          go build -trimpath -ldflags "-s -w -X github.com/plattyssh/platty/internal/version.Version=$VERSION" -o "dist/$name/platty" ./cmd/platty
-          cp LICENSE THIRD_PARTY_NOTICES.md "dist/$name/"
-          tar -C dist -czf "dist/$name.tar.gz" "$name"
-          (cd dist && sha256sum "$name.tar.gz" > "$name.tar.gz.sha256")
+          name="Platty-linux-preview-$BUILD-x86_64.AppImage"
+          curl -fsSL -o linuxdeploy https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage
+          chmod +x linuxdeploy
+          mkdir -p AppDir/usr/share/doc/platty dist
+          cp LICENSE THIRD_PARTY_NOTICES.md AppDir/usr/share/doc/platty/
+          LDAI_OUTPUT="dist/$name" ./linuxdeploy --appdir AppDir -e build/platty -d packaging/linux/platty.desktop -i packaging/linux/platty.png --output appimage
+          (cd dist && sha256sum "$name" > "$name.sha256")
 
       - name: Release notes
         run: |
@@ -41,11 +47,11 @@ jobs:
 
           ### Run it
           \`\`\`sh
-          tar -xzf platty-linux-preview-$BUILD-amd64.tar.gz
-          ./platty-linux-preview-$BUILD-amd64/platty
+          chmod +x Platty-linux-preview-$BUILD-x86_64.AppImage
+          ./Platty-linux-preview-$BUILD-x86_64.AppImage
           \`\`\`
 
-          It needs Wayland or X11 with OpenGL ES or Vulkan. On Debian and Ubuntu: \`sudo apt install libwayland-client0 libwayland-egl1 libxkbcommon-x11-0 libx11-xcb1 libxcursor1 libegl1 libvulkan1\`.
+          It needs Wayland or X11 with OpenGL ES or Vulkan, which every desktop already has. If your system has no FUSE, run it with \`--appimage-extract-and-run\`.
 
           ### What should work
           - SSH sessions, SFTP, port forwarding, the vault and the rest of the app
@@ -55,12 +61,12 @@ jobs:
           ### Not yet
           - Without a system keyring the vault key is stored unprotected: set a master password in Settings › Security
           - Native window decorations, drag and drop with the file manager, fontconfig lookup
-          - Packages (AppImage, Flatpak, .deb, .rpm) and automatic updates
+          - Desktop integration, Flatpak, .deb and .rpm packages, and automatic updates
           NOTES
 
       - name: Publish
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create "$GITHUB_REF_NAME" dist/*.tar.gz dist/*.sha256 \
+          gh release create "$GITHUB_REF_NAME" dist/*.AppImage dist/*.sha256 \
             --title "Platty Linux preview $BUILD" --notes-file dist/notes.md --prerelease --latest=false
