@@ -2,8 +2,20 @@
   #define Version "0.1.0-dev"
 #endif
 
+#ifndef Arch
+  #define Arch "amd64"
+#endif
+
 #ifndef SourceDir
-  #define SourceDir "..\dist\platty"
+  #define SourceDir "..\dist\platty-" + Arch
+#endif
+
+#if Arch == "arm64"
+  #define Machines "arm64"
+  #define SetupName "platty-" + Version + "-arm64-setup"
+#else
+  #define Machines "x64compatible"
+  #define SetupName "platty-" + Version + "-setup"
 #endif
 
 [Setup]
@@ -18,15 +30,15 @@ DefaultDirName={localappdata}\Programs\Platty
 DisableProgramGroupPage=yes
 DisableDirPage=yes
 PrivilegesRequired=lowest
-OutputBaseFilename=platty-{#Version}-setup
+OutputBaseFilename={#SetupName}
 Compression=lzma2
 SolidCompression=yes
 WizardStyle=modern
 SetupIconFile=platty.ico
 UninstallDisplayIcon={app}\platty.exe
 UninstallDisplayName=Platty
-ArchitecturesAllowed=x64compatible
-ArchitecturesInstallIn64BitMode=x64compatible
+ArchitecturesAllowed={#Machines}
+ArchitecturesInstallIn64BitMode={#Machines}
 MinVersion=10.0.17763
 CloseApplications=force
 RestartApplications=no
