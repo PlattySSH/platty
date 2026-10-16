@@ -30,7 +30,6 @@ import (
 	"github.com/plattyssh/platty/internal/app/welcome"
 	"github.com/plattyssh/platty/internal/config"
 	"github.com/plattyssh/platty/internal/fonts"
-	"github.com/plattyssh/platty/internal/platform/dragdrop"
 	"github.com/plattyssh/platty/internal/platform/shell"
 	"github.com/plattyssh/platty/internal/session"
 	"github.com/plattyssh/platty/internal/transfer"
@@ -159,10 +158,8 @@ func (a *App) loop() error {
 			}
 		case gioapp.ConfigEvent:
 			a.maximized = e.Config.Mode == gioapp.Maximized
-		case gioapp.Win32ViewEvent:
-			if hwnd := e.HWND; hwnd != 0 {
-				go a.win.Run(func() { dragdrop.Enable(hwnd, a.dropFiles) })
-			}
+		case gioapp.ViewEvent:
+			a.attachView(e)
 		case gioapp.FrameEvent:
 			gtx := gioapp.NewContext(&ops, e)
 			a.frame(gtx)

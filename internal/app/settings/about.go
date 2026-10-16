@@ -144,7 +144,7 @@ func (d *Dialog) aboutPage(a core.Host, gtx C) []layout.FlexChild {
 	children = append(children,
 		layout.Rigid(kit.Gap(22)),
 		layout.Rigid(func(gtx C) D {
-			return k.Label(gtx, kit.TextStyle{Color: th.TextMuted, MaxLines: 2}, "A fast, native SSH client and terminal for Windows.")
+			return k.Label(gtx, kit.TextStyle{Color: th.TextMuted, MaxLines: 2}, "A fast, native SSH client and terminal.")
 		}),
 		layout.Rigid(kit.Gap(18)),
 		layout.Rigid(func(gtx C) D {
