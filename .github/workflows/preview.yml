@@ -92,13 +92,16 @@ jobs:
             cp build/platty.icns "$app/Contents/Resources/platty.icns"
             cp LICENSE THIRD_PARTY_NOTICES.md "$app/Contents/Resources/"
             codesign --force --deep --sign - "$app"
-            ditto -c -k --keepParent "$app" "dist/Platty-preview-$BUILD-macos-$label.zip"
+            mkdir -p "build/dmg-$arch"
+            cp -R "$app" "build/dmg-$arch/"
+            ln -s /Applications "build/dmg-$arch/Applications"
+            hdiutil create -volname Platty -srcfolder "build/dmg-$arch" -ov -format UDZO "dist/Platty-preview-$BUILD-macos-$label.dmg"
           done
 
       - uses: actions/upload-artifact@v4
         with:
           name: macos
-          path: dist/*.zip
+          path: dist/*.dmg
 
   publish:
     needs: [linux, macos]
@@ -127,12 +130,7 @@ jobs:
           It needs Wayland or X11 with OpenGL ES or Vulkan. If your system has no FUSE, add \`--appimage-extract-and-run\`.
 
           ### 🍎 macOS
-          Pick **apple-silicon** for M1 and newer, **intel** for older Macs. Requires macOS 12 or later.
-
-          The app isn't signed by Apple yet, so macOS will say it's damaged or can't be checked. Unzip it, move Platty to Applications and run once:
-          \`\`\`sh
-          xattr -dr com.apple.quarantine /Applications/Platty.app
-          \`\`\`
+          Pick **apple-silicon** for M1 and newer, **intel** for older Macs. Requires macOS 12 or later. Open the \`.dmg\` and drag Platty to Applications. The first time, open it from System Settings › Privacy & Security › Open Anyway.
 
           ### What should work
           - SSH sessions, SFTP, port forwarding, the vault and the rest of the app
