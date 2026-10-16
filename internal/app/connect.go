@@ -97,6 +97,8 @@ func (a *App) paneAction(p *Pane, action string) {
 		a.toggleLog(p)
 	case actionBroadcast:
 		a.toggleBroadcast(p)
+	case actionCast:
+		a.toggleCast(p)
 	}
 }
 

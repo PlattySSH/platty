@@ -297,6 +297,7 @@ func shortcutFilters() []event.Filter {
 		key.Filter{Name: "E", Required: cs},
 		key.Filter{Name: "N", Required: cs},
 		key.Filter{Name: "L", Required: cs},
+		key.Filter{Name: "B", Required: cs},
 		key.Filter{Name: key.NameTab, Required: key.ModCtrl, Optional: key.ModShift},
 		key.Filter{Name: key.NamePageDown, Required: key.ModCtrl},
 		key.Filter{Name: key.NamePageUp, Required: key.ModCtrl},
@@ -355,6 +356,8 @@ func (a *App) shortcut(e key.Event) {
 		a.OpenDocked(core.Right, hosts.NewEditor(a, vault.Host{}))
 	case "L":
 		a.LockVault()
+	case "B":
+		a.toggleActiveBroadcast()
 	case key.NameTab:
 		if shift {
 			a.ws.cycle(-1)

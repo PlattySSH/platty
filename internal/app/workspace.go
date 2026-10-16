@@ -31,6 +31,8 @@ const (
 
 type Pane struct {
 	mirrored   bool
+	cast       bool
+	castLabel  widget.Clickable
 	origin     origin
 	stats      paneStats
 	connecting connecting
@@ -497,7 +499,7 @@ func (w *workspace) layoutNode(a *App, gtx C, t *Tab, n *node, origin image.Poin
 		}
 
 		if t.broadcast {
-			broadcastBorder(gtx, a, size)
+			a.broadcastMark(gtx, n.pane, size)
 		}
 
 		return dims

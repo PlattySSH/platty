@@ -45,6 +45,7 @@ func (a *App) paletteEntries() []palette.Entry {
 		{"New snippet", "", icons.Snippet, func() { a.OpenIn(a.tools.snippets, snippets.NewEditor(a, vault.Snippet{})) }},
 		{"Split right", "Ctrl+Shift+D", icons.SplitRight, func() { a.ws.split(a, true) }},
 		{"Split down", "Ctrl+Shift+E", icons.SplitDown, func() { a.ws.split(a, false) }},
+		{"Broadcast input to this tab", "Ctrl+Shift+B", icons.ArrowsOutline, a.toggleActiveBroadcast},
 		{"Find in terminal", "Ctrl+Shift+F", icons.Search, func() {
 			if pn := a.ws.activePane(); pn != nil {
 				pn.view.OpenSearch()

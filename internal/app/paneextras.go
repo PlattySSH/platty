@@ -4,10 +4,13 @@ import (
 	"fmt"
 	"image"
 	"io"
+	"slices"
 	"strings"
 	"time"
 
 	"gioui.org/io/clipboard"
+	"gioui.org/io/pointer"
+	"gioui.org/op"
 
 	"github.com/plattyssh/platty/internal/app/dialogs"
 	"github.com/plattyssh/platty/internal/config"
@@ -19,6 +22,7 @@ import (
 const (
 	actionLog       = "log"
 	actionBroadcast = "broadcast"
+	actionCast      = "cast"
 )
 
 func (a *App) paneExtras(p *Pane) []termview.Extra {
@@ -34,6 +38,13 @@ func (a *App) paneExtras(p *Pane) []termview.Extra {
 	switch {
 	case t != nil && t.broadcast:
 		cast.Item.Label = "Stop broadcasting"
+		pick := termview.Extra{Action: actionCast, Item: kit.MenuItem{Label: "Leave out of broadcast", Icon: icons.ArrowsOutline}}
+
+		if !p.cast {
+			pick.Item.Label = "Include in broadcast"
+		}
+
+		return []termview.Extra{log, pick, cast}
 	case t == nil || len(t.root.panes(nil)) < 2:
 		cast.Item.Disabled = true
 	}
@@ -94,13 +105,80 @@ func (a *App) toggleBroadcast(p *Pane) {
 		for _, q := range t.root.panes(nil) {
 			q.sess.SetMirror(nil)
 			q.mirrored = false
+			q.cast = false
 		}
 
 		return
 	}
 
-	a.toasts.Info("Broadcasting", "What you type goes to every pane in this tab.")
+	skipped := 0
+
+	for _, q := range t.root.panes(nil) {
+		q.cast = !a.protected(q)
+
+		if !q.cast {
+			skipped++
+		}
+	}
+
+	msg := "What you type goes to every pane in this tab. Click a pane's label to leave it out."
+
+	switch {
+	case skipped == 1:
+		msg = "1 protected pane was left out because of its host tags. Click its label to include it anyway."
+	case skipped > 1:
+		msg = fmt.Sprintf("%d protected panes were left out because of their host tags. Click a label to include one anyway.", skipped)
+	}
+
+	a.toasts.Info("Broadcasting", msg)
 	syncBroadcast(t)
+}
+
+func (a *App) protected(p *Pane) bool {
+	h := p.origin.Host
+
+	if h == nil && p.origin.HostID != "" {
+		if v, ok := a.vault.Host(p.origin.HostID); ok {
+			h = &v
+		}
+	}
+
+	if h == nil {
+		return false
+	}
+
+	skip := strings.FieldsFunc(strings.ToLower(a.settings.BroadcastSkip), func(r rune) bool { return r == ',' || r == ' ' })
+
+	for _, tag := range h.Tags {
+		if slices.Contains(skip, strings.ToLower(strings.TrimSpace(tag))) {
+			return true
+		}
+	}
+
+	return false
+}
+
+func (a *App) toggleActiveBroadcast() {
+	t := a.ws.current()
+
+	if t == nil || t.active == nil {
+		return
+	}
+
+	if !t.broadcast && len(t.root.panes(nil)) < 2 {
+		a.toasts.Info("Nothing to broadcast to", "Split this tab first, then type into every pane at once.")
+		return
+	}
+
+	a.toggleBroadcast(t.active)
+}
+
+func (a *App) toggleCast(p *Pane) {
+	if t := a.ws.tabOf(p); t == nil || !t.broadcast {
+		return
+	}
+
+	p.cast = !p.cast
 }
 
 func syncBroadcast(t *Tab) {
@@ -115,8 +193,12 @@ func syncBroadcast(t *Tab) {
 
 		p.mirrored = true
 		p.sess.SetMirror(func(b []byte) {
+			if !p.cast {
+				return
+			}
+
 			for _, q := range t.root.panes(nil) {
-				if q != p {
+				if q != p && q.cast {
 					q.sess.SendOnly(b)
 				}
 			}
@@ -124,8 +206,37 @@ func syncBroadcast(t *Tab) {
 	}
 }
 
-func broadcastBorder(gtx C, a *App, size image.Point) {
-	kit.Border(gtx, image.Rectangle{Max: size}.Inset(1), 0, 2, kit.Fade(a.th().Danger, 0.8))
+func (a *App) broadcastMark(gtx C, p *Pane, size image.Point) {
+	th := a.th()
+
+	if p.castLabel.Clicked(gtx) {
+		a.toggleCast(p)
+	}
+
+	label, c := "Not receiving", th.TextMuted
+
+	if a.protected(p) {
+		label = "Protected · not receiving"
+	}
+
+	if p.cast {
+		kit.Border(gtx, image.Rectangle{Max: size}.Inset(gtx.Dp(3)), gtx.Dp(th.RadiusSmall), float32(gtx.Dp(1.5)), kit.Fade(th.Danger, 0.7))
+		label, c = "Broadcasting", th.Danger
+	}
+
+	gtx.Constraints.Min = image.Point{}
+	m := op.Record(gtx.Ops)
+	dims := p.castLabel.Layout(gtx, func(gtx C) D {
+		return kit.Background(gtx, th.Background, th.RadiusSmall, func(gtx C) D {
+			return a.kit.Badge(gtx, label, c)
+		})
+	})
+	call := m.Stop()
+
+	pad := gtx.Dp(10)
+	defer op.Offset(image.Pt(size.X-dims.Size.X-pad, pad)).Push(gtx.Ops).Pop()
+	kit.Cursor(gtx, dims.Size, pointer.CursorPointer)
+	call.Add(gtx.Ops)
 }
 
 const (

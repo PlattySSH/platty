@@ -45,6 +45,7 @@ type Settings struct {
 	Ligatures     bool    `json:"ligatures"`
 	Clipboard     string  `json:"serverClipboard"`
 	AutoUpdate    bool    `json:"autoUpdate"`
+	BroadcastSkip string  `json:"broadcastSkipTags"`
 }
 
 const designVersion = 3
@@ -67,6 +68,7 @@ func Defaults() Settings {
 		Clipboard:     ClipboardAsk,
 		AutoUpdate:    true,
 		Ligatures:     true,
+		BroadcastSkip: "prod, production",
 		SidebarWidth:  280,
 		SidebarOpen:   "hosts",
 		DesignVersion: designVersion,

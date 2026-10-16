@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"image"
 	"strconv"
+	"strings"
 
 	"gioui.org/font"
 	"gioui.org/io/pointer"
@@ -46,6 +47,7 @@ var keymap = [][2]string{
 	{"New host", "Ctrl+Shift+N"},
 	{"Close panel", "Ctrl+Shift+W"},
 	{"Split right / down", "Ctrl+Shift+D / Ctrl+Shift+E"},
+	{"Broadcast input to the tab", "Ctrl+Shift+B"},
 	{"Move focus between panes", "Alt+Arrows"},
 	{"Next / previous tab", "Ctrl+Tab / Ctrl+Shift+Tab"},
 	{"Tool windows", "Alt+1 … Alt+6"},
@@ -78,6 +80,7 @@ type Dialog struct {
 	fontSize, lineHeight, scrollback, keepAlive     widget.Editor
 	blink, copySel, confirm, hideIPs, restore, ligs widget.Bool
 	autoUpdate                                      widget.Bool
+	skipTags                                        widget.Editor
 
 	ok, apply, cancel widget.Clickable
 	list              layout.List
@@ -85,7 +88,7 @@ type Dialog struct {
 
 func New(a core.Host) *Dialog {
 	d := &Dialog{h: a, s: a.Settings(), pages: make([]widget.Clickable, len(settingsPages))}
-	dialogs.SingleLine(&d.fontSize, &d.lineHeight, &d.scrollback, &d.keepAlive)
+	dialogs.SingleLine(&d.fontSize, &d.lineHeight, &d.scrollback, &d.keepAlive, &d.skipTags)
 	d.fontSize.Filter = "0123456789."
 	d.lineHeight.Filter = "0123456789."
 	d.scrollback.Filter = "0123456789"
@@ -121,6 +124,7 @@ func New(a core.Host) *Dialog {
 	d.lineHeight.SetText(strconv.FormatFloat(float64(s.LineHeight), 'g', -1, 32))
 	d.scrollback.SetText(strconv.Itoa(s.Scrollback))
 	d.keepAlive.SetText(strconv.Itoa(s.KeepAlive))
+	d.skipTags.SetText(s.BroadcastSkip)
 	d.blink.Value = s.CursorBlink
 	d.copySel.Value = s.CopyOnSelect
 	d.confirm.Value = s.ConfirmClose
@@ -174,6 +178,7 @@ func (d *Dialog) collect(a core.Host) config.Settings {
 	s.RestoreTabs = d.restore.Value
 	s.Ligatures = d.ligs.Value
 	s.AutoUpdate = d.autoUpdate.Value
+	s.BroadcastSkip = strings.TrimSpace(d.skipTags.Text())
 	s.LockAfter = lockAfterMinutes[d.sec.lockAfter.Value]
 	return s
 }
@@ -343,6 +348,16 @@ func (d *Dialog) content(a core.Host, gtx C) D {
 			row("Reopen tabs on start", left(func(gtx C) D { return k.Toggle(gtx, &d.restore) })),
 			row("Font ligatures", left(func(gtx C) D { return k.Toggle(gtx, &d.ligs) })),
 			row("Scrollback lines", left(narrow(&d.scrollback, "10000"))),
+			row("Leave out of broadcast", func(gtx C) D {
+				gtx.Constraints.Max.X = min(gtx.Constraints.Max.X, gtx.Dp(280))
+				return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+					layout.Rigid(func(gtx C) D { return k.Field(gtx, &d.skipTags, kit.FieldOpts{Hint: "prod, production"}) }),
+					layout.Rigid(kit.Gap(6)),
+					layout.Rigid(func(gtx C) D {
+						return k.Label(gtx, kit.TextStyle{Size: th.TextSizeSmall, Color: th.TextMuted}, "Hosts with these tags start excluded. Click a pane's label to include it anyway.")
+					}),
+				)
+			}),
 		}
 	case 2:
 		agent := "Not detected (enable the “OpenSSH Authentication Agent” service)"
