@@ -67,11 +67,11 @@ snippets**) into one calm, monochrome window.
 
 | Layer | Technology |
 |-------|------------|
-| Language | Go 1.26 · no cgo |
+| Language | Go 1.26 · no cgo on Windows |
 | UI | Gio 0.10 (Direct3D 11) · Phosphor icons · Segoe UI, Geist and JetBrains Mono |
-| Terminal | Own VT emulator (`libs/vt`) · ConPTY (`libs/conpty`) · own glyph rasterizer (`libs/glyphs`) |
+| Terminal | Own VT emulator (`libs/vt`) · pseudo terminals with ConPTY or `/dev/ptmx` (`libs/pty`) · own glyph rasterizer (`libs/glyphs`) |
 | SSH | golang.org/x/crypto/ssh · pkg/sftp |
-| Storage | XChaCha20-Poly1305 vault · key wrapped with DPAPI and/or Argon2id · JSON settings |
+| Storage | XChaCha20-Poly1305 vault · key wrapped with DPAPI or the system keyring and/or Argon2id · JSON settings |
 
 ## 🚀 Getting started
 
@@ -142,11 +142,11 @@ platty/
 │   ├── sshx/              # SSH: auth, host keys, jump hosts, forwarding, SFTP, metrics
 │   ├── vault/             # encrypted storage
 │   ├── tunnel/  sshconfig/  config/  fonts/  format/  privacy/
-│   ├── platform/          # OS integration: local shells, file drop
+│   ├── platform/          # OS integration: local shells, file drop, keyring
 │   └── ui/                # theme, icons, component kit and widgets (termview, sol...)
 ├── libs/                  # reusable libraries, each with its own go.mod
 │   ├── vt/                # terminal emulator (parser/, input/)
-│   ├── conpty/            # Windows pseudo-consoles
+│   ├── pty/               # pseudo terminals (ConPTY, Unix)
 │   └── glyphs/            # glyph rasterizer
 └── packaging/             # release script, installer and icon
 ```
