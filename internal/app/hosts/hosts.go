@@ -119,7 +119,6 @@ type itemsKey struct {
 type hostItem struct {
 	folder string
 	depth  int
-	count  int
 	newDir bool
 	full   bool
 	host   *vault.Host
@@ -229,17 +228,6 @@ func (p *Panel) buildItems() []hostItem {
 		hostsIn[g] = append(hostsIn[g], &p.hosts[i])
 	}
 
-	var count func(folder string) int
-	count = func(folder string) int {
-		n := len(hostsIn[folder])
-
-		for _, c := range children[folder] {
-			n += count(c)
-		}
-
-		return n
-	}
-
 	var out []hostItem
 	var walk func(folder string, depth int)
 	walk = func(folder string, depth int) {
@@ -248,8 +236,7 @@ func (p *Panel) buildItems() []hostItem {
 		}
 
 		for _, f := range children[folder] {
-			out = append(out, hostItem{folder: f, depth: depth, count: count(f),
-				full: len(children[f]) > 0 || len(hostsIn[f]) > 0})
+			out = append(out, hostItem{folder: f, depth: depth, full: len(children[f]) > 0 || len(hostsIn[f]) > 0})
 
 			if !p.collapsed[f] {
 				walk(f, depth+1)
@@ -353,13 +340,6 @@ func (p *Panel) groupHeader(a core.Host, gtx C, it hostItem) D {
 					}
 
 					return k.Label(gtx, kit.TextStyle{Color: fg}, vault.FolderName(it.folder))
-				}),
-				layout.Rigid(func(gtx C) D {
-					if it.count == 0 {
-						return D{}
-					}
-
-					return k.Label(gtx, kit.TextStyle{Size: th.TextSizeSmall, Color: th.TextFaint}, strconv.Itoa(it.count))
 				}),
 			)
 		})
