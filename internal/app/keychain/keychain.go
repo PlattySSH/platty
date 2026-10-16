@@ -113,7 +113,7 @@ func (p *Panel) Body(gtx C) D {
 		}
 
 		return a.Kit().EmptyState(gtx, icons.Key, "Keychain is empty",
-			"Generate an ed25519 key or import an existing one. Keys are encrypted with your Windows user.",
+			"Generate an ed25519 key or import an existing one. Keys are encrypted with your "+vault.OSOwner+".",
 			func(gtx C) D { return k.Button(gtx, &p.emptyGen, kit.Primary, icons.Add, "Generate key") },
 			func(gtx C) D { return k.Button(gtx, &p.emptyImp, kit.Secondary, icons.Download, "Import…") },
 		)

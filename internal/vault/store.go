@@ -316,6 +316,7 @@ func (v *Vault) SetOSUnlock(on bool) error {
 		return nil
 	}
 
+	old := v.env.OS
 	v.env.OS = nil
 
 	if on {
@@ -329,5 +330,11 @@ func (v *Vault) SetOSUnlock(on bool) error {
 	}
 
 	v.rev++
-	return v.save()
+
+	if err := v.save(); err != nil {
+		return err
+	}
+
+	forget(old)
+	return nil
 }

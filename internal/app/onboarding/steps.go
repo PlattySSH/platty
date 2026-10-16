@@ -14,6 +14,7 @@ import (
 	"github.com/plattyssh/platty/internal/ui/icons"
 	"github.com/plattyssh/platty/internal/ui/kit"
 	"github.com/plattyssh/platty/internal/ui/theme"
+	"github.com/plattyssh/platty/internal/vault"
 )
 
 func (d *Intro) welcome(gtx C) D {
@@ -181,11 +182,11 @@ func (d *Intro) security(gtx C) D {
 	children = append(children,
 		layout.Rigid(kit.Gap(6)),
 		layout.Rigid(func(gtx C) D {
-			return k.Checkbox(gtx, &d.osUnlock, "Also open the vault with my Windows user, without typing it")
+			return k.Checkbox(gtx, &d.osUnlock, "Also open the vault with my "+vault.OSOwner+", without typing it")
 		}),
 		layout.Rigid(kit.Gap(12)),
 		layout.Rigid(func(gtx C) D {
-			return k.Label(gtx, kit.TextStyle{Size: th.TextSizeSmall, Color: th.TextMuted, MaxLines: 3}, "If you forget the master password and turn the Windows option off, Platty can't open the vault again.")
+			return k.Label(gtx, kit.TextStyle{Size: th.TextSizeSmall, Color: th.TextMuted, MaxLines: 3}, "If you forget the master password and turn the "+vault.OSName+" option off, Platty can't open the vault again.")
 		}),
 	)
 

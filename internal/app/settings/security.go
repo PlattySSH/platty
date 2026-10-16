@@ -82,7 +82,7 @@ func (s *security) update(a core.Host, gtx C) {
 	}
 
 	if s.remove.Clicked(gtx) {
-		s.report(v.SetPassword(s.current.Text(), ""), "Master password removed. The vault opens with your Windows user.")
+		s.report(v.SetPassword(s.current.Text(), ""), "Master password removed. The vault opens with your "+vault.OSOwner+".")
 
 		if !s.failed {
 			s.current.SetText("")
@@ -130,7 +130,7 @@ func (d *Dialog) securityPage(a core.Host, gtx C, row func(string, layout.Widget
 		}
 	}
 
-	status := "Not set. The vault opens with your Windows user only."
+	status := "Not set. The vault opens with your "+vault.OSOwner+" only."
 
 	if has {
 		status = "Set."
@@ -184,7 +184,7 @@ func (d *Dialog) securityPage(a core.Host, gtx C, row func(string, layout.Widget
 
 	if has {
 		children = append(children,
-			row("Unlock with Windows", left(func(gtx C) D {
+			row("Unlock with "+vault.OSName, left(func(gtx C) D {
 				return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 					layout.Rigid(func(gtx C) D { return k.Toggle(gtx, &s.osUnlock) }),
 					layout.Rigid(kit.Gap(12)),

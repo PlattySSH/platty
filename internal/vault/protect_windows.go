@@ -6,6 +6,11 @@ import (
 	"golang.org/x/sys/windows"
 )
 
+const (
+	OSOwner = "Windows user"
+	OSName  = "Windows"
+)
+
 var entropy = []byte("platty-vault-v1")
 
 func protect(plain []byte) ([]byte, error) {
@@ -43,3 +48,5 @@ func dpapi(in []byte, encrypt bool) ([]byte, error) {
 	copy(res, unsafe.Slice(out.Data, out.Size))
 	return res, nil
 }
+
+func forget(enc []byte) {}
