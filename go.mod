@@ -25,14 +25,14 @@ require (
 )
 
 require (
-	github.com/plattyssh/conpty v0.0.0
 	github.com/plattyssh/glyphs v0.0.0
+	github.com/plattyssh/pty v0.0.0
 	github.com/plattyssh/vt v0.0.0
 )
 
 // The libraries live in libs/ until they are published under github.com/PlattySSH.
 replace (
-	github.com/plattyssh/conpty => ./libs/conpty
 	github.com/plattyssh/glyphs => ./libs/glyphs
+	github.com/plattyssh/pty => ./libs/pty
 	github.com/plattyssh/vt => ./libs/vt
 )

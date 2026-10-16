@@ -9,7 +9,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/plattyssh/conpty"
+	"github.com/plattyssh/pty"
 	"github.com/plattyssh/vt"
 
 	"github.com/plattyssh/platty/internal/sshx"
@@ -312,7 +312,7 @@ func (s *Session) connect() {
 
 	switch s.Kind {
 	case Local:
-		t, err = conpty.Start(conpty.Options{
+		t, err = pty.Start(pty.Options{
 			Command: s.opts.Command,
 			Cols:    cols,
 			Rows:    rows,

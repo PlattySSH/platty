@@ -1,4 +1,4 @@
-module github.com/plattyssh/conpty
+module github.com/plattyssh/pty
 
 go 1.26.5
 

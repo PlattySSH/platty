@@ -1,4 +1,4 @@
-package conpty
+package pty
 
 import (
 	"fmt"
@@ -32,13 +32,13 @@ func Start(opts Options) (PTY, error) {
 	var inR, inW, outR, outW windows.Handle
 
 	if err := windows.CreatePipe(&inR, &inW, nil, 0); err != nil {
-		return nil, fmt.Errorf("conpty: input pipe: %w", err)
+		return nil, fmt.Errorf("pty: input pipe: %w", err)
 	}
 
 	if err := windows.CreatePipe(&outR, &outW, nil, 0); err != nil {
 		windows.CloseHandle(inR)
 		windows.CloseHandle(inW)
-		return nil, fmt.Errorf("conpty: output pipe: %w", err)
+		return nil, fmt.Errorf("pty: output pipe: %w", err)
 	}
 
 	var hpc windows.Handle
@@ -52,7 +52,7 @@ func Start(opts Options) (PTY, error) {
 	if err != nil {
 		windows.CloseHandle(inW)
 		windows.CloseHandle(outR)
-		return nil, fmt.Errorf("conpty: CreatePseudoConsole: %w", err)
+		return nil, fmt.Errorf("pty: CreatePseudoConsole: %w", err)
 	}
 
 	process, err := spawn(hpc, cmdline, opts)
@@ -76,7 +76,7 @@ func spawn(hpc windows.Handle, cmdline string, opts Options) (windows.Handle, er
 	attrs, err := windows.NewProcThreadAttributeList(1)
 
 	if err != nil {
-		return 0, fmt.Errorf("conpty: attribute list: %w", err)
+		return 0, fmt.Errorf("pty: attribute list: %w", err)
 	}
 
 	defer attrs.Delete()
@@ -84,7 +84,7 @@ func spawn(hpc windows.Handle, cmdline string, opts Options) (windows.Handle, er
 	err = attrs.Update(windows.PROC_THREAD_ATTRIBUTE_PSEUDOCONSOLE, *(*unsafe.Pointer)(unsafe.Pointer(&hpc)), unsafe.Sizeof(hpc))
 
 	if err != nil {
-		return 0, fmt.Errorf("conpty: attribute pseudoconsole: %w", err)
+		return 0, fmt.Errorf("pty: attribute pseudoconsole: %w", err)
 	}
 
 	si := &windows.StartupInfoEx{ProcThreadAttributeList: attrs.List()}
@@ -114,7 +114,7 @@ func spawn(hpc windows.Handle, cmdline string, opts Options) (windows.Handle, er
 	err = windows.CreateProcess(nil, cmd16, nil, nil, false, flags, &env[0], dir16, &si.StartupInfo, &pi)
 
 	if err != nil {
-		return 0, fmt.Errorf("conpty: CreateProcess %q: %w", cmdline, err)
+		return 0, fmt.Errorf("pty: CreateProcess %q: %w", cmdline, err)
 	}
 
 	windows.CloseHandle(pi.Thread)
@@ -167,7 +167,7 @@ func commandLine(command []string) (string, error) {
 	exe, err := exec.LookPath(command[0])
 
 	if err != nil {
-		return "", fmt.Errorf("conpty: %w", err)
+		return "", fmt.Errorf("pty: %w", err)
 	}
 
 	args := make([]string, len(command))
