@@ -2,6 +2,19 @@
 
 All notable changes to Platty are listed here. Versions follow [Semantic Versioning](https://semver.org).
 
+## 0.1.1-beta.2 (2026-10-16)
+
+Choose which panes receive broadcast input, so test and production sessions can share a tab safely.
+
+### Terminal
+- Broadcast input can leave panes out: each pane shows whether it is receiving, and clicking that label (or the pane menu) includes or excludes it. Panes added later start excluded.
+- Ctrl+Shift+B starts and stops broadcasting in the current tab.
+- Hosts tagged `prod` or `production` start out of the broadcast and are marked as protected; the tag list is in Settings › Terminal.
+
+### Interface
+- Applying settings confirms the change with a notification.
+- Folders in the host list no longer show a host count.
+
 ## 0.1.1-beta.1 (2026-10-15)
 
 A security and performance beta, and the first build that updates itself.
