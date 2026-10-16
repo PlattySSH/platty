@@ -20,22 +20,6 @@ const (
 	BoldItalic
 )
 
-const winFonts = `C:\Windows\Fonts`
-
-var fallbackFiles = []string{
-	"seguisym.ttf",
-	"CascadiaMono.ttf",
-	"consola.ttf",
-	"msgothic.ttc",
-	"msyh.ttc",
-	"malgun.ttf",
-	"seguihis.ttf",
-	"arial.ttf",
-	"segoeui.ttf",
-}
-
-const emojiFile = "seguiemj.ttf"
-
 type face struct {
 	*font.Face
 	upem float32
@@ -130,20 +114,58 @@ func (s *Set) loadFallbacks() {
 	s.loaded = true
 
 	for _, name := range fallbackFiles {
-		s.fallbacks = append(s.fallbacks, loadFile(filepath.Join(winFonts, name))...)
+		if path := locate(name); path != "" {
+			s.fallbacks = append(s.fallbacks, loadFile(path)...)
+		}
 	}
 }
 
 func (s *Set) emojiFace() *face {
-	if !s.emojiOK {
-		s.emojiOK = true
+	if s.emojiOK {
+		return s.emoji
+	}
 
-		if fs := loadFile(filepath.Join(winFonts, emojiFile)); len(fs) > 0 {
-			s.emoji = fs[0]
+	s.emojiOK = true
+
+	for _, name := range emojiFiles {
+		if path := locate(name); path != "" {
+			if fs := loadFile(path); len(fs) > 0 {
+				s.emoji = fs[0]
+				break
+			}
 		}
 	}
 
 	return s.emoji
+}
+
+var (
+	indexOnce sync.Once
+	index     map[string]string
+)
+
+func locate(name string) string {
+	indexOnce.Do(func() {
+		index = map[string]string{}
+
+		for _, dir := range fontDirs() {
+			filepath.WalkDir(dir, func(path string, d fs.DirEntry, err error) error {
+				if err != nil || d.IsDir() {
+					return nil
+				}
+
+				key := strings.ToLower(d.Name())
+
+				if _, ok := index[key]; !ok {
+					index[key] = path
+				}
+
+				return nil
+			})
+		}
+	})
+
+	return index[strings.ToLower(name)]
 }
 
 func (s *Set) Primary() *font.Face {
