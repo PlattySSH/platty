@@ -27,3 +27,7 @@ jobs:
 
       - name: Build
         run: go build -ldflags "-H windowsgui" -o bin/platty.exe ./cmd/platty
+
+      - name: Build for ARM64
+        shell: bash
+        run: GOARCH=arm64 go build -ldflags "-H windowsgui" -o bin/platty-arm64.exe ./cmd/platty
