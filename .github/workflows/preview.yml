@@ -1,0 +1,155 @@
+name: Preview
+
+on:
+  push:
+    tags: ["preview-*"]
+
+permissions:
+  contents: write
+
+jobs:
+  linux:
+    strategy:
+      matrix:
+        include:
+          - arch: x86_64
+            runner: ubuntu-22.04
+          - arch: aarch64
+            runner: ubuntu-22.04-arm
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Install Gio dependencies
+        run: sudo apt-get update && sudo apt-get install -y gcc pkg-config libwayland-dev libx11-dev libx11-xcb-dev libxkbcommon-x11-dev libgles2-mesa-dev libegl1-mesa-dev libffi-dev libxcursor-dev libvulkan-dev
+
+      - name: Version
+        run: |
+          echo "BUILD=${GITHUB_REF_NAME#preview-}" >> "$GITHUB_ENV"
+          echo "VERSION=0.1.1-dev.preview.${GITHUB_REF_NAME#preview-}" >> "$GITHUB_ENV"
+
+      - name: Build
+        run: go build -trimpath -ldflags "-s -w -X github.com/plattyssh/platty/internal/version.Version=$VERSION" -o build/platty ./cmd/platty
+
+      - name: Package AppImage
+        env:
+          APPIMAGE_EXTRACT_AND_RUN: 1
+        run: |
+          name="Platty-preview-$BUILD-linux-${{ matrix.arch }}.AppImage"
+          curl -fsSL -o linuxdeploy "https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-${{ matrix.arch }}.AppImage"
+          chmod +x linuxdeploy
+          mkdir -p AppDir/usr/share/doc/platty dist
+          cp LICENSE THIRD_PARTY_NOTICES.md AppDir/usr/share/doc/platty/
+          LDAI_OUTPUT="dist/$name" ./linuxdeploy --appdir AppDir -e build/platty -d packaging/linux/platty.desktop -i packaging/platty.png --output appimage
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: linux-${{ matrix.arch }}
+          path: dist/*.AppImage
+
+  macos:
+    runs-on: macos-latest
+    env:
+      MACOSX_DEPLOYMENT_TARGET: "12.0"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Version
+        run: |
+          echo "BUILD=${GITHUB_REF_NAME#preview-}" >> "$GITHUB_ENV"
+          echo "VERSION=0.1.1-dev.preview.${GITHUB_REF_NAME#preview-}" >> "$GITHUB_ENV"
+
+      - name: Icon
+        run: |
+          mkdir -p build/platty.iconset
+          for s in 16 32 128 256; do
+            sips -z $s $s packaging/platty.png --out build/platty.iconset/icon_${s}x${s}.png >/dev/null
+          done
+          for s in 16 32 128; do
+            d=$((s * 2))
+            sips -z $d $d packaging/platty.png --out build/platty.iconset/icon_${s}x${s}@2x.png >/dev/null
+          done
+          iconutil -c icns build/platty.iconset -o build/platty.icns
+
+      - name: Build and package
+        run: |
+          mkdir -p dist
+          for arch in arm64 amd64; do
+            label=$([ "$arch" = arm64 ] && echo apple-silicon || echo intel)
+            app="build/$arch/Platty.app"
+            mkdir -p "$app/Contents/MacOS" "$app/Contents/Resources"
+            CGO_ENABLED=1 GOARCH=$arch CC="clang -arch $([ "$arch" = amd64 ] && echo x86_64 || echo arm64)" \
+              go build -trimpath -ldflags "-s -w -X github.com/plattyssh/platty/internal/version.Version=$VERSION" -o "$app/Contents/MacOS/platty" ./cmd/platty
+            sed "s/VERSION/${VERSION%%-*}/g" packaging/macos/Info.plist > "$app/Contents/Info.plist"
+            cp build/platty.icns "$app/Contents/Resources/platty.icns"
+            cp LICENSE THIRD_PARTY_NOTICES.md "$app/Contents/Resources/"
+            codesign --force --deep --sign - "$app"
+            ditto -c -k --keepParent "$app" "dist/Platty-preview-$BUILD-macos-$label.zip"
+          done
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: macos
+          path: dist/*.zip
+
+  publish:
+    needs: [linux, macos]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: Checksums
+        run: cd dist && sha256sum Platty-* > checksums.txt
+
+      - name: Release notes
+        run: |
+          BUILD=${GITHUB_REF_NAME#preview-}
+          cat > notes.md <<NOTES
+          A test build of Platty for Linux and macOS, made from \`${GITHUB_SHA::7}\`. It is not a release: expect rough edges, and please report what you find in #1 (macOS) or #2 (Linux). The Windows builds are in the regular releases.
+
+          ### 🐧 Linux
+          Pick **x86_64** for most PCs and **aarch64** for ARM boards and laptops.
+          \`\`\`sh
+          chmod +x Platty-preview-$BUILD-linux-x86_64.AppImage
+          ./Platty-preview-$BUILD-linux-x86_64.AppImage
+          \`\`\`
+          It needs Wayland or X11 with OpenGL ES or Vulkan. If your system has no FUSE, add \`--appimage-extract-and-run\`.
+
+          ### 🍎 macOS
+          Pick **apple-silicon** for M1 and newer, **intel** for older Macs. Requires macOS 12 or later.
+
+          The app isn't signed by Apple yet, so macOS will say it's damaged or can't be checked. Unzip it, move Platty to Applications and run once:
+          \`\`\`sh
+          xattr -dr com.apple.quarantine /Applications/Platty.app
+          \`\`\`
+
+          ### What should work
+          - SSH sessions, SFTP, port forwarding, the vault and the rest of the app
+          - Local terminals in a pseudo terminal, with bash, zsh and fish (your \`\$SHELL\` first)
+          - The vault key in the macOS Keychain, or in the system keyring on Linux (GNOME Keyring, KWallet) when one is running
+
+          ### Not yet
+          - On Linux without a system keyring the vault key is stored unprotected: set a master password in Settings › Security
+          - macOS shortcuts still use Ctrl instead of Cmd, and Apple Color Emoji isn't drawn yet
+          - Native window decorations and drag and drop with the file manager or Finder
+          - Signed builds, packages (Flatpak, .deb, .rpm, .dmg, Homebrew) and automatic updates
+          NOTES
+
+      - name: Publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          BUILD=${GITHUB_REF_NAME#preview-}
+          gh release create "$GITHUB_REF_NAME" dist/* -R "$GITHUB_REPOSITORY" \
+            --title "Platty preview $BUILD for Linux and macOS" --notes-file notes.md --prerelease --latest=false
