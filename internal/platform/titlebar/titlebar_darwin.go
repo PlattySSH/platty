@@ -85,7 +85,7 @@ import "C"
 
 const (
 	Native = true
-	Width  = 70
+	Width  = 64
 )
 
 func Attach(view uintptr, x, center, height float32) {

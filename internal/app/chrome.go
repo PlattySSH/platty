@@ -160,8 +160,13 @@ func (c *chrome) sidebarTop(a *App, gtx C) D {
 	layout.Inset{Left: 10, Right: 10, Top: headerHeight - tabHeight}.Layout(gtx, func(gtx C) D {
 		gtx.Constraints.Min.Y = gtx.Dp(tabHeight)
 		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-			layout.Rigid(trafficLightsGap),
-			layout.Rigid(func(gtx C) D { return c.logo.Layout(gtx, a.kit, 46) }),
+			layout.Rigid(func(gtx C) D {
+				if titlebar.Native {
+					return trafficLightsGap(gtx)
+				}
+
+				return c.logo.Layout(gtx, a.kit, 46)
+			}),
 			layout.Flexed(1, func(gtx C) D { return D{Size: image.Pt(gtx.Constraints.Min.X, 0)} }),
 			layout.Rigid(func(gtx C) D {
 				return k.IconButtonSized(gtx, &c.sideToggle, icons.SidebarLeft, false, 30, 18, th.TextFaint)

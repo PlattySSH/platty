@@ -6,7 +6,7 @@ import (
 	"github.com/plattyssh/platty/internal/platform/titlebar"
 )
 
-const trafficLightsX = 16
+const trafficLightsX = 20
 
 func (a *App) attachView(ev gioapp.ViewEvent) {
 	if e, ok := ev.(gioapp.AppKitViewEvent); ok {
