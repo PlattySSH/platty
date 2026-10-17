@@ -1,11 +1,11 @@
-package conpty
+package pty
 
 import (
 	"errors"
 	"io"
 )
 
-var ErrUnsupported = errors.New("conpty: unsupported platform")
+var ErrUnsupported = errors.New("pty: unsupported platform")
 
 type Options struct {
 	Command    []string

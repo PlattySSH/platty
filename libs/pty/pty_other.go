@@ -1,6 +1,6 @@
-//go:build !windows
+//go:build !windows && !linux && !darwin
 
-package conpty
+package pty
 
 func Start(opts Options) (PTY, error) {
 	return nil, ErrUnsupported

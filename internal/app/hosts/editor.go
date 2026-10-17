@@ -345,7 +345,7 @@ func (e *Editor) Layout(gtx C) bool {
 		}))
 	case 2:
 		children = append(children, row("", func(gtx C) D {
-			return k.Label(gtx, kit.TextStyle{Color: th.TextMuted, MaxLines: 2}, "Keys from the Windows SSH agent (ssh-agent service) will be used, including hardware keys added with ssh-add.")
+			return k.Label(gtx, kit.TextStyle{Color: th.TextMuted, MaxLines: 2}, agentHint)
 		}))
 	}
 

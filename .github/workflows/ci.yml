@@ -31,3 +31,51 @@ jobs:
       - name: Build for ARM64
         shell: bash
         run: GOARCH=arm64 go build -ldflags "-H windowsgui" -o bin/platty-arm64.exe ./cmd/platty
+
+  linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Install Gio dependencies
+        run: sudo apt-get update && sudo apt-get install -y gcc pkg-config libwayland-dev libx11-dev libx11-xcb-dev libxkbcommon-x11-dev libgles2-mesa-dev libegl1-mesa-dev libffi-dev libxcursor-dev libvulkan-dev
+
+      - name: Vet
+        run: go vet ./...
+
+      - name: Vet libraries
+        run: |
+          for dir in libs/*/; do
+            (cd "$dir" && go vet ./...)
+          done
+
+      - name: Build
+        run: go build -o bin/platty ./cmd/platty
+
+  macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Vet
+        run: go vet ./...
+
+      - name: Vet libraries
+        run: |
+          for dir in libs/*/; do
+            (cd "$dir" && go vet ./...)
+          done
+
+      - name: Build
+        run: go build -o bin/platty ./cmd/platty
+
+      - name: Build for Intel
+        run: CGO_ENABLED=1 GOARCH=amd64 CC="clang -arch x86_64" go build -o bin/platty-amd64 ./cmd/platty
