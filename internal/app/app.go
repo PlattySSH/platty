@@ -55,6 +55,7 @@ const (
 
 type App struct {
 	win      *gioapp.Window
+	view     uintptr
 	explorer *explorer.Explorer
 	kit      *kit.Kit
 	shaper   *text.Shaper
@@ -158,6 +159,7 @@ func (a *App) loop() error {
 			}
 		case gioapp.ConfigEvent:
 			a.maximized = e.Config.Mode == gioapp.Maximized
+			a.configured()
 		case gioapp.ViewEvent:
 			a.attachView(e)
 		case gioapp.FrameEvent:

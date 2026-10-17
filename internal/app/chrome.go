@@ -16,6 +16,7 @@ import (
 
 	"github.com/plattyssh/platty/internal/app/core"
 	"github.com/plattyssh/platty/internal/app/settings"
+	"github.com/plattyssh/platty/internal/platform/titlebar"
 	"github.com/plattyssh/platty/internal/ui/icons"
 	"github.com/plattyssh/platty/internal/ui/kit"
 	"github.com/plattyssh/platty/internal/ui/metrics"
@@ -159,6 +160,7 @@ func (c *chrome) sidebarTop(a *App, gtx C) D {
 	layout.Inset{Left: 10, Right: 10, Top: headerHeight - tabHeight}.Layout(gtx, func(gtx C) D {
 		gtx.Constraints.Min.Y = gtx.Dp(tabHeight)
 		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
+			layout.Rigid(trafficLightsGap),
 			layout.Rigid(func(gtx C) D { return c.logo.Layout(gtx, a.kit, 46) }),
 			layout.Flexed(1, func(gtx C) D { return D{Size: image.Pt(gtx.Constraints.Min.X, 0)} }),
 			layout.Rigid(func(gtx C) D {
@@ -311,7 +313,7 @@ func (c *chrome) header(a *App, gtx C) D {
 	children := []layout.FlexChild{}
 
 	if a.tools.open[core.Left] < 0 {
-		children = append(children, icon(&c.sideToggle, icons.SidebarLeft, false), layout.Rigid(kit.Gap(8)))
+		children = append(children, layout.Rigid(trafficLightsGap), icon(&c.sideToggle, icons.SidebarLeft, false), layout.Rigid(kit.Gap(8)))
 	}
 
 	children = append(children,
@@ -431,7 +433,15 @@ func (c *chrome) toolRow(a *App, gtx C, i int) D {
 	return c.navRowStyled(a, gtx, &a.tools.rows[i], tw.Icon(), tw.Title(), false, open, nil)
 }
 
+func trafficLightsGap(gtx C) D {
+	return D{Size: image.Pt(gtx.Dp(titlebar.Width), 0)}
+}
+
 func (c *chrome) windowControls(a *App, gtx C) D {
+	if titlebar.Native {
+		return D{}
+	}
+
 	return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 		layout.Rigid(func(gtx C) D { return c.windowButton(a, gtx, &c.minimize, icons.Minimize, false) }),
 		layout.Rigid(func(gtx C) D {

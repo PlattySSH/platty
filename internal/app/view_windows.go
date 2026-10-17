@@ -16,3 +16,5 @@ func (a *App) attachView(ev gioapp.ViewEvent) {
 	hwnd := e.HWND
 	go a.win.Run(func() { dragdrop.Enable(hwnd, a.dropFiles) })
 }
+
+func (a *App) configured() {}
