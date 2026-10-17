@@ -87,6 +87,7 @@ type App struct {
 	allowedClip *serverClip
 
 	maximized  bool
+	fullscreen bool
 	closing    bool
 	hideAddrs  atomic.Bool
 	autoUpdate atomic.Bool
@@ -159,6 +160,7 @@ func (a *App) loop() error {
 			}
 		case gioapp.ConfigEvent:
 			a.maximized = e.Config.Mode == gioapp.Maximized
+			a.fullscreen = e.Config.Mode == gioapp.Fullscreen
 			a.configured()
 		case gioapp.ViewEvent:
 			a.attachView(e)

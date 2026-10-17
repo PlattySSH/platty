@@ -161,8 +161,8 @@ func (c *chrome) sidebarTop(a *App, gtx C) D {
 		gtx.Constraints.Min.Y = gtx.Dp(tabHeight)
 		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 			layout.Rigid(func(gtx C) D {
-				if titlebar.Native {
-					return trafficLightsGap(gtx)
+				if a.trafficLights() {
+					return a.trafficLightsGap(gtx)
 				}
 
 				return c.logo.Layout(gtx, a.kit, 46)
@@ -318,7 +318,7 @@ func (c *chrome) header(a *App, gtx C) D {
 	children := []layout.FlexChild{}
 
 	if a.tools.open[core.Left] < 0 {
-		children = append(children, layout.Rigid(trafficLightsGap), icon(&c.sideToggle, icons.SidebarLeft, false), layout.Rigid(kit.Gap(8)))
+		children = append(children, layout.Rigid(a.trafficLightsGap), icon(&c.sideToggle, icons.SidebarLeft, false), layout.Rigid(kit.Gap(8)))
 	}
 
 	children = append(children,
@@ -438,7 +438,15 @@ func (c *chrome) toolRow(a *App, gtx C, i int) D {
 	return c.navRowStyled(a, gtx, &a.tools.rows[i], tw.Icon(), tw.Title(), false, open, nil)
 }
 
-func trafficLightsGap(gtx C) D {
+func (a *App) trafficLights() bool {
+	return titlebar.Native && !a.fullscreen
+}
+
+func (a *App) trafficLightsGap(gtx C) D {
+	if !a.trafficLights() {
+		return D{}
+	}
+
 	return D{Size: image.Pt(gtx.Dp(titlebar.Width), 0)}
 }
 
