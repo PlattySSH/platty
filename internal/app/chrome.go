@@ -27,6 +27,7 @@ const (
 	sidebarWidth      = unit.Dp(260)
 	sidebarFormWidth  = unit.Dp(330)
 	sidebarTopHeight  = unit.Dp(68)
+	macLogoHeight     = unit.Dp(40)
 	headerHeight      = unit.Dp(52)
 	cardMargin        = unit.Dp(8)
 	windowButtonWidth = unit.Dp(38)
@@ -153,7 +154,13 @@ func (c *chrome) sidebarTop(a *App, gtx C) D {
 	c.logo.Posed, c.logo.Tilt, c.logo.Look = true, 0.22, f32.Pt(1, -1)
 	th := a.th()
 	k := a.kit
-	size := image.Pt(gtx.Constraints.Max.X, gtx.Dp(sidebarTopHeight))
+	height := sidebarTopHeight
+
+	if a.trafficLights() {
+		height += macLogoHeight
+	}
+
+	size := image.Pt(gtx.Constraints.Max.X, gtx.Dp(height))
 	gtx.Constraints = layout.Exact(size)
 	moveArea(gtx, size)
 
@@ -173,6 +180,12 @@ func (c *chrome) sidebarTop(a *App, gtx C) D {
 			}),
 		)
 	})
+
+	if a.trafficLights() {
+		defer op.Offset(image.Pt(gtx.Dp(10), gtx.Dp(headerHeight+4))).Push(gtx.Ops).Pop()
+		c.logo.Layout(gtx, a.kit, macLogoHeight)
+	}
+
 	return D{Size: size}
 }
 
