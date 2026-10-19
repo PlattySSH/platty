@@ -96,9 +96,11 @@ type Forward struct {
 }
 
 type Snippet struct {
-	ID      string `json:"id"`
-	Label   string `json:"label"`
-	Command string `json:"command"`
+	ID       string `json:"id"`
+	Label    string `json:"label"`
+	Command  string `json:"command"`
+	Shortcut string `json:"shortcut,omitempty"`
+	Trigger  string `json:"trigger,omitempty"`
 }
 
 type KnownHost struct {

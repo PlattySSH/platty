@@ -130,7 +130,17 @@ func (p *Panel) Body(gtx C) D {
 				}),
 				layout.Rigid(func(gtx C) D {
 					if !r.Hovered() && !run.Hovered() {
-						return D{}
+						hint := s.Shortcut
+
+						if hint == "" {
+							hint = s.Trigger
+						}
+
+						if hint == "" {
+							return D{}
+						}
+
+						return k.Label(gtx, kit.TextStyle{Size: th.TextSizeSmall - 1, Color: th.TextFaint, Mono: true}, hint)
 					}
 
 					return k.IconButtonSized(gtx, run, icons.Play, false, 22, 16, th.TextMuted)
@@ -177,13 +187,40 @@ func NewEditor(a core.Host, s vault.Snippet) *dialogs.Form {
 	cmd.Multi = true
 	cmd.Mono = true
 
-	f := dialogs.NewForm(a.Kit(), title, "Save", dialogs.NewField("Name", "Restart nginx", s.Label), cmd)
+	shortcut := dialogs.NewField("Shortcut", "Ctrl+Alt+F or F23 (optional)", s.Shortcut)
+	trigger := dialogs.NewField("Trigger", ";;firewall (optional)", s.Trigger)
+	trigger.Mono = true
+
+	f := dialogs.NewForm(a.Kit(), title, "Save", dialogs.NewField("Name", "Restart nginx", s.Label), cmd, shortcut, trigger)
 	f.Width = 520
 	f.OnOK = func(v []string) bool {
 		s.Label = strings.TrimSpace(v[0])
 		s.Command = strings.TrimSpace(v[1])
+		s.Shortcut = ""
+		s.Trigger = strings.TrimSpace(v[3])
 
 		if s.Command == "" {
+			return false
+		}
+
+		if raw := strings.TrimSpace(v[2]); raw != "" {
+			b, err := ParseShortcut(raw)
+
+			if err != nil {
+				a.Toasts().Error("Shortcut not saved", err.Error())
+				return false
+			}
+
+			s.Shortcut = b.String()
+		}
+
+		if s.Trigger != "" && !ValidTrigger(s.Trigger) {
+			a.Toasts().Error("Trigger not saved", errBadTrigger.Error())
+			return false
+		}
+
+		if other, ok := clash(a.Vault().Snapshot().Snippets, s); ok {
+			a.Toasts().Error("Already in use", "“"+other.Label+"” uses the same shortcut or trigger.")
 			return false
 		}
 
@@ -195,6 +232,20 @@ func NewEditor(a core.Host, s vault.Snippet) *dialogs.Form {
 		return true
 	}
 	return f
+}
+
+func clash(list []vault.Snippet, s vault.Snippet) (vault.Snippet, bool) {
+	for _, o := range list {
+		if o.ID == s.ID {
+			continue
+		}
+
+		if s.Shortcut != "" && o.Shortcut == s.Shortcut || s.Trigger != "" && o.Trigger == s.Trigger {
+			return o, true
+		}
+	}
+
+	return vault.Snippet{}, false
 }
 
 func New(h core.Host) *Panel {
