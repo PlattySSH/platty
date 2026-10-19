@@ -97,8 +97,7 @@ func (a *App) RunSnippet(s vault.Snippet, execute bool) {
 		return
 	}
 
-	cmd := strings.ReplaceAll(s.Command, "\r\n", "\n")
-	cmd = strings.ReplaceAll(cmd, "\n", "\r")
+	cmd := snippetText(s)
 
 	if execute {
 		cmd = strings.TrimRight(cmd, "\r") + "\r"

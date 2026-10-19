@@ -4,6 +4,7 @@ import (
 	gioapp "gioui.org/app"
 
 	"github.com/plattyssh/platty/internal/platform/dragdrop"
+	"github.com/plattyssh/platty/internal/platform/extkeys"
 )
 
 func (a *App) attachView(ev gioapp.ViewEvent) {
@@ -14,7 +15,18 @@ func (a *App) attachView(ev gioapp.ViewEvent) {
 	}
 
 	hwnd := e.HWND
-	go a.win.Run(func() { dragdrop.Enable(hwnd, a.dropFiles) })
+	go a.win.Run(func() {
+		dragdrop.Enable(hwnd, a.dropFiles)
+		extkeys.Enable(hwnd, a.extKey)
+	})
+}
+
+func (a *App) extKey(name string) {
+	select {
+	case a.extKeys <- name:
+		a.Invalidate()
+	default:
+	}
 }
 
 func (a *App) configured() {}

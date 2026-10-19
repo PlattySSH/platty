@@ -27,6 +27,7 @@ import (
 	"github.com/plattyssh/platty/internal/app/onboarding"
 	"github.com/plattyssh/platty/internal/app/palette"
 	"github.com/plattyssh/platty/internal/app/settings"
+	"github.com/plattyssh/platty/internal/app/snippets"
 	"github.com/plattyssh/platty/internal/app/welcome"
 	"github.com/plattyssh/platty/internal/config"
 	"github.com/plattyssh/platty/internal/fonts"
@@ -83,6 +84,8 @@ type App struct {
 	started     time.Time
 	restored    bool
 	drops       chan []string
+	extKeys     chan string
+	snipKeys    snippetKeys
 	clips       chan serverClip
 	allowedClip *serverClip
 
@@ -110,6 +113,7 @@ func Run() error {
 		vault:    v,
 		profiles: shell.Detect(),
 		drops:    make(chan []string, 8),
+		extKeys:  make(chan string, 8),
 		clips:    make(chan serverClip, 4),
 	}
 	a.syncLive()
@@ -235,6 +239,10 @@ func (a *App) frame(gtx C) {
 	select {
 	case paths := <-a.drops:
 		a.handleDrop(paths)
+	case name := <-a.extKeys:
+		if a.modal == nil {
+			a.runSnippetKey(name)
+		}
 	default:
 	}
 
@@ -318,8 +326,10 @@ func shortcutFilters() []event.Filter {
 }
 
 func (a *App) handleShortcuts(gtx C) {
+	filters := a.snippetKeys().filters
+
 	for {
-		ev, ok := gtx.Event(shortcuts...)
+		ev, ok := gtx.Event(filters...)
 
 		if !ok {
 			return
@@ -332,6 +342,10 @@ func (a *App) handleShortcuts(gtx C) {
 		}
 
 		if e.State != key.Press || a.modal != nil {
+			continue
+		}
+
+		if a.runSnippetKey(snippets.Binding{Name: e.Name, Mods: e.Modifiers}.String()) {
 			continue
 		}
 

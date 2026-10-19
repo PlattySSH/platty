@@ -79,6 +79,7 @@ func (a *App) newPane(s *session.Session) *Pane {
 	}
 	p.view.OnAction = func(action string) { a.paneAction(p, action) }
 	p.view.OnFocus = func() { a.focusPane(p) }
+	p.view.Expand = a.expandTrigger
 	p.view.Extras = func() []termview.Extra { return a.paneExtras(p) }
 	return p
 }
