@@ -107,7 +107,7 @@ func (v *View) handleEvents(gtx layout.Context) {
 
 			v.backend.Send(input.EncodeFocus(e.Focus, v.modes))
 		case key.EditEvent:
-			v.send([]byte(e.Text))
+			v.typeText(e.Text)
 		case key.Event:
 			if e.State == key.Press {
 				v.handleKey(gtx, e)
@@ -124,6 +124,10 @@ func (v *View) handleEvents(gtx layout.Context) {
 
 func (v *View) handleKey(gtx layout.Context, e key.Event) {
 	if v.shortcut(gtx, e) {
+		return
+	}
+
+	if v.trackKey(e) {
 		return
 	}
 
@@ -403,6 +407,7 @@ func (v *View) paste(e transfer.DataEvent) {
 		return
 	}
 
+	v.word = v.word[:0]
 	v.send(input.EncodePaste(string(data), v.modes))
 }
 

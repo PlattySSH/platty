@@ -98,7 +98,9 @@ type View struct {
 	OnOpenURL func(url string)
 	OnFocus   func()
 	Extras    func() []Extra
+	Expand    func(word string) (string, bool)
 	extras    []Extra
+	word      []rune
 
 	Debug     bool
 	lastFrame time.Duration
