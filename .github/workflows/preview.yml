@@ -103,8 +103,41 @@ jobs:
           name: macos
           path: dist/*.dmg
 
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Version
+        shell: bash
+        run: |
+          echo "BUILD=${GITHUB_REF_NAME#preview-}" >> "$GITHUB_ENV"
+          echo "VERSION=0.1.1-dev.preview.${GITHUB_REF_NAME#preview-}" >> "$GITHUB_ENV"
+
+      - name: Build and package
+        shell: pwsh
+        run: ./packaging/build.ps1 -Version $env:VERSION -Installer
+
+      - name: Rename
+        shell: bash
+        run: |
+          mkdir out
+          mv "dist/platty-$VERSION-windows-amd64.zip" "out/Platty-preview-$BUILD-windows-x64.zip"
+          mv "dist/platty-$VERSION-windows-arm64.zip" "out/Platty-preview-$BUILD-windows-arm64.zip"
+          mv "dist/platty-$VERSION-setup.exe" "out/Platty-preview-$BUILD-windows-x64-setup.exe"
+          mv "dist/platty-$VERSION-arm64-setup.exe" "out/Platty-preview-$BUILD-windows-arm64-setup.exe"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows
+          path: out/*
+
   publish:
-    needs: [linux, macos]
+    needs: [linux, macos, windows]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/download-artifact@v4
@@ -119,7 +152,10 @@ jobs:
         run: |
           BUILD=${GITHUB_REF_NAME#preview-}
           cat > notes.md <<NOTES
-          A test build of Platty for Linux and macOS, made from \`${GITHUB_SHA::7}\`. It is not a release: expect rough edges, and please report what you find in #1 (macOS) or #2 (Linux). The Windows builds are in the regular releases.
+          A test build of Platty for Windows, Linux and macOS, made from \`${GITHUB_SHA::7}\`. It is not a release: expect rough edges, and please report what you find in the issues. Preview builds don't update themselves; the stable versions are in the regular releases.
+
+          ### 🪟 Windows
+          Use the **x64** files on most PCs and **arm64** on Snapdragon and Surface Pro X. The setup replaces an installed Platty, the zip is portable. If SmartScreen stops it, choose *More info* and then *Run anyway*.
 
           ### 🐧 Linux
           Pick **x86_64** for most PCs and **aarch64** for ARM boards and laptops.
@@ -150,4 +186,4 @@ jobs:
         run: |
           BUILD=${GITHUB_REF_NAME#preview-}
           gh release create "$GITHUB_REF_NAME" dist/* -R "$GITHUB_REPOSITORY" \
-            --title "Platty preview $BUILD for Linux and macOS" --notes-file notes.md --prerelease --latest=false
+            --title "Platty preview $BUILD" --notes-file notes.md --prerelease --latest=false
