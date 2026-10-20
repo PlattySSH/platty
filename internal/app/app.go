@@ -270,6 +270,10 @@ func (a *App) frame(gtx C) {
 	a.layoutModal(gtx)
 	a.idleLock(gtx)
 	a.kit.TrackPointer(gtx)
+
+	if a.vault.Revision() != a.vaultRev {
+		gtx.Execute(op.InvalidateCmd{})
+	}
 }
 
 func (a *App) layoutModal(gtx C) {

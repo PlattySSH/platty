@@ -257,9 +257,17 @@ func (p *Panel) Body(gtx C) D {
 	p.handleMenus(a, gtx)
 
 	items := p.items()
-	return a.Kit().List(gtx, &p.list, len(items), func(gtx C, i int) D {
+	dims := a.Kit().List(gtx, &p.list, len(items), func(gtx C, i int) D {
 		return p.item(a, gtx, items[i])
 	})
+	p.invalidateIfStale(gtx)
+	return dims
+}
+
+func (p *Panel) invalidateIfStale(gtx C) {
+	if (itemsKey{p.gen, p.edit.active, p.edit.parent, p.edit.path}) != p.itemsKey {
+		gtx.Execute(op.InvalidateCmd{})
+	}
 }
 
 func (p *Panel) item(a core.Host, gtx C, it hostItem) D {
@@ -702,6 +710,7 @@ func (p *Panel) Sidebar(gtx C) D {
 			}
 		})
 	})
+	p.invalidateIfStale(gtx)
 	return dims
 }
 
