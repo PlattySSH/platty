@@ -20,6 +20,7 @@ type InlineEdit struct {
 	cancel  widget.Clickable
 	inside  bool
 	seen    int
+	blurred bool
 }
 
 type EditResult int
@@ -41,6 +42,8 @@ func (e *InlineEdit) Start(k *Kit, text string) {
 
 func (e *InlineEdit) Text() string { return e.editor.Text() }
 
+func (e *InlineEdit) Blurred() bool { return e.blurred }
+
 func (e *InlineEdit) Layout(gtx C, k *Kit, hint string) (D, EditResult) {
 	th := k.Th
 
@@ -52,6 +55,7 @@ func (e *InlineEdit) Layout(gtx C, k *Kit, hint string) (D, EditResult) {
 		}
 
 		if _, ok := ev.(widget.SubmitEvent); ok {
+			e.blurred = false
 			return D{}, EditCommit
 		}
 	}
@@ -79,7 +83,8 @@ func (e *InlineEdit) Layout(gtx C, k *Kit, hint string) (D, EditResult) {
 
 	if gtx.Focused(&e.editor) {
 		e.had = true
-	} else if e.had {
+	} else if e.had && !e.cancel.Pressed() {
+		e.blurred = true
 		return D{}, EditCommit
 	}
 
@@ -95,6 +100,7 @@ func (e *InlineEdit) Layout(gtx C, k *Kit, hint string) (D, EditResult) {
 	}
 
 	if k.Presses() != e.seen {
+		e.blurred = true
 		return D{}, EditCommit
 	}
 

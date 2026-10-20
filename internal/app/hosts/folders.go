@@ -54,6 +54,10 @@ func (p *Panel) commitEdit(a core.Host) {
 	}
 
 	if to != e.path && slices.Contains(p.folders, to) {
+		if e.field.Blurred() {
+			return
+		}
+
 		a.Toasts().Error("Folder already exists", "A folder named “"+vault.FolderName(to)+"” already exists here.")
 		e.active = true
 		e.field.Start(a.Kit(), e.field.Text())
