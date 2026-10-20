@@ -1,6 +1,7 @@
 package hosts
 
 import (
+	"slices"
 	"strings"
 
 	"gioui.org/layout"
@@ -50,6 +51,13 @@ func (p *Panel) commitEdit(a core.Host) {
 
 	if e.parent != "" {
 		to = e.parent + vault.FolderSep + name
+	}
+
+	if to != e.path && slices.Contains(p.folders, to) {
+		a.Toasts().Error("Folder already exists", "A folder named “"+vault.FolderName(to)+"” already exists here.")
+		e.active = true
+		e.field.Start(a.Kit(), e.field.Text())
+		return
 	}
 
 	if e.path == "" {

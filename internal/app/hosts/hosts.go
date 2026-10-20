@@ -3,6 +3,7 @@ package hosts
 import (
 	"image"
 	"io"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -573,7 +574,14 @@ func (p *Panel) drop(a core.Host, mime, value, folder string) {
 			return
 		}
 
-		a.Vault().RenameFolder(value, folder+vault.FolderSep+vault.FolderName(value))
+		to := vault.CleanFolder(folder + vault.FolderSep + vault.FolderName(value))
+
+		if slices.Contains(p.folders, to) {
+			a.Toasts().Error("Folder already exists", "A folder named “"+vault.FolderName(to)+"” already exists there.")
+			return
+		}
+
+		a.Vault().RenameFolder(value, to)
 	}
 }
 
