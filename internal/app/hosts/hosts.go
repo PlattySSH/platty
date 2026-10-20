@@ -296,7 +296,7 @@ func (p *Panel) groupHeader(a core.Host, gtx C, it hostItem) D {
 
 	ev := g.row.Update(gtx)
 
-	if ev.Click && !ev.DoubleClick {
+	if ev.Click {
 		p.collapsed[it.folder] = !p.collapsed[it.folder]
 		p.gen++
 	}
