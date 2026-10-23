@@ -45,7 +45,8 @@ func (a *App) ActiveSession() *session.Session {
 }
 
 func (a *App) UpdateSettings(s config.Settings) {
-	themeChanged := s.Theme != a.settings.Theme
+	o := a.settings
+	themeChanged := s.Theme != o.Theme || s.Accent != o.Accent || s.Density != o.Density || s.Corners != o.Corners || s.TermScheme != o.TermScheme
 	a.settings = s
 	a.syncLive()
 

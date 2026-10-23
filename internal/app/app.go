@@ -77,6 +77,8 @@ type App struct {
 	transfers *transfer.Queue
 
 	modal       core.Modal
+	leaving     core.Modal
+	leaveAt     time.Time
 	docked      [2]core.Modal
 	prompts     promptQueue
 	passes      passphrases
@@ -84,6 +86,7 @@ type App struct {
 	started     time.Time
 	restored    bool
 	drops       chan []string
+	dragOver    atomic.Bool
 	extKeys     chan string
 	snipKeys    snippetKeys
 	clips       chan serverClip
@@ -119,7 +122,7 @@ func Run() error {
 	a.syncLive()
 	a.shaper, a.face = fonts.Load()
 	a.glyphs, _ = fonts.Glyphs(a.settings.TerminalFont)
-	a.kit = kit.New(theme.New(a.settings.Theme), a.shaper)
+	a.kit = kit.New(a.buildTheme(), a.shaper)
 	a.explorer = explorer.NewExplorer(a.win)
 	a.tunnels = a.newTunnels()
 	a.transfers = transfer.New(a.Invalidate)
@@ -259,7 +262,10 @@ func (a *App) frame(gtx C) {
 	gtx.Constraints.Min = gtx.Constraints.Max
 	a.kit.ReadPointer(gtx)
 	a.kit.Redact = a.redactor()
-	a.chrome.shell(a, gtx)
+	if _, intro := a.modal.(*onboarding.Intro); !intro {
+		a.chrome.shell(a, gtx)
+		a.dropOverlay(gtx)
+	}
 
 	a.toasts.Layout(gtx, a.kit)
 
@@ -283,11 +289,23 @@ func (a *App) layoutModal(gtx C) {
 		}
 	}
 
+	if m := a.leaving; m != nil {
+		if p := float32(gtx.Now.Sub(a.leaveAt)) / float32(160*time.Millisecond); p < 1 && m != a.modal {
+			a.kit.Exit = max(1-p, 0.001)
+			m.Layout(gtx.Disabled())
+			a.kit.Exit = 0
+			gtx.Execute(op.InvalidateCmd{})
+		} else {
+			a.leaving = nil
+		}
+	}
+
 	if a.modal == nil {
 		return
 	}
 
 	if a.modal.Layout(gtx) {
+		a.leaving, a.leaveAt = a.modal, gtx.Now
 		a.modal = nil
 		a.ws.focusActive()
 	}
@@ -404,9 +422,14 @@ func (a *App) shortcut(e key.Event) {
 
 func (a *App) SetTheme(name string) {
 	a.settings.Theme = name
-	a.kit.SetTheme(theme.New(name))
+	a.kit.SetTheme(a.buildTheme())
 	a.ws.applyTheme(a)
 	config.Save(a.settings)
+}
+
+func (a *App) buildTheme() *theme.Theme {
+	s := a.settings
+	return theme.Build(s.Theme, theme.Options{Accent: s.Accent, Density: s.Density, Corners: s.Corners, Terminal: s.TermScheme})
 }
 
 func (a *App) applySettings() {

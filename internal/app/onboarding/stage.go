@@ -202,7 +202,9 @@ func bubble(gtx layout.Context, k *kit.Kit, text string, shown int, at f32.Point
 	x := int(at.X) - w/2
 	y := int(at.Y + tail)
 
-	defer paint.PushOpacity(gtx.Ops, alpha).Pop()
+	if alpha < 1 {
+		defer paint.PushOpacity(gtx.Ops, max(alpha, 0.01)).Pop()
+	}
 	defer op.Offset(image.Pt(x, y)).Push(gtx.Ops).Pop()
 
 	r := image.Rect(0, 0, w, h)

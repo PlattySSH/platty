@@ -34,6 +34,7 @@ type Kit struct {
 	Th     *theme.Theme
 	Shaper *text.Shaper
 	Mat    *material.Theme
+	Exit   float32
 
 	anims  map[animKey]*Anim
 	pruned time.Time

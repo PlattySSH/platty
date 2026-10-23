@@ -6,11 +6,13 @@ import (
 	"strconv"
 
 	"gioui.org/f32"
+	"gioui.org/font"
 	"gioui.org/io/pointer"
 	"gioui.org/io/system"
 	"gioui.org/layout"
 	"gioui.org/op"
 	"gioui.org/op/clip"
+	"gioui.org/op/paint"
 	"gioui.org/unit"
 	"gioui.org/widget"
 
@@ -26,7 +28,7 @@ import (
 const (
 	sidebarWidth      = unit.Dp(260)
 	sidebarFormWidth  = unit.Dp(330)
-	sidebarTopHeight  = unit.Dp(68)
+	sidebarTopHeight  = unit.Dp(60)
 	macLogoHeight     = unit.Dp(40)
 	headerHeight      = unit.Dp(52)
 	cardMargin        = unit.Dp(8)
@@ -110,6 +112,10 @@ func (c *chrome) sidebar(a *App, gtx C) D {
 	defer clip.Rect{Max: image.Pt(width, height)}.Push(gtx.Ops).Pop()
 	defer op.Offset(image.Pt(width-full, 0)).Push(gtx.Ops).Pop()
 
+	if p := float32(width) / float32(full); p < 1 {
+		defer paint.PushOpacity(gtx.Ops, p*p).Pop()
+	}
+
 	gtx.Constraints = layout.Exact(image.Pt(full, height))
 	layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 		layout.Rigid(func(gtx C) D { return c.sidebarTop(a, gtx) }),
@@ -164,7 +170,7 @@ func (c *chrome) sidebarTop(a *App, gtx C) D {
 	gtx.Constraints = layout.Exact(size)
 	moveArea(gtx, size)
 
-	layout.Inset{Left: 10, Right: 10, Top: headerHeight - tabHeight}.Layout(gtx, func(gtx C) D {
+	layout.Inset{Left: 14, Right: 10, Top: headerHeight - tabHeight}.Layout(gtx, func(gtx C) D {
 		gtx.Constraints.Min.Y = gtx.Dp(tabHeight)
 		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 			layout.Rigid(func(gtx C) D {
@@ -172,7 +178,7 @@ func (c *chrome) sidebarTop(a *App, gtx C) D {
 					return a.trafficLightsGap(gtx)
 				}
 
-				return c.logo.Layout(gtx, a.kit, 46)
+				return c.brand(a, gtx)
 			}),
 			layout.Flexed(1, func(gtx C) D { return D{Size: image.Pt(gtx.Constraints.Min.X, 0)} }),
 			layout.Rigid(func(gtx C) D {
@@ -183,10 +189,22 @@ func (c *chrome) sidebarTop(a *App, gtx C) D {
 
 	if a.trafficLights() {
 		defer op.Offset(image.Pt(gtx.Dp(10), gtx.Dp(headerHeight+4))).Push(gtx.Ops).Pop()
-		c.logo.Layout(gtx, a.kit, macLogoHeight)
+		c.brand(a, gtx)
 	}
 
 	return D{Size: size}
+}
+
+func (c *chrome) brand(a *App, gtx C) D {
+	th := a.th()
+
+	return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
+		layout.Rigid(func(gtx C) D { return c.logo.Layout(gtx, a.kit, 30) }),
+		layout.Rigid(kit.Gap(6)),
+		layout.Rigid(func(gtx C) D {
+			return a.kit.Label(gtx, kit.TextStyle{Size: 15, Weight: font.SemiBold, Color: th.Text}, "Platty")
+		}),
+	)
 }
 
 func (c *chrome) handleNav(a *App, gtx C) {
@@ -274,6 +292,11 @@ func (c *chrome) newTermRow(a *App, gtx C) D {
 func (c *chrome) sidebarTools(a *App, gtx C) D {
 	return layout.Inset{Left: 8, Right: 8, Top: 8, Bottom: 10}.Layout(gtx, func(gtx C) D {
 		children := make([]layout.FlexChild, 0, len(a.tools.list)+1)
+		children = append(children, layout.Rigid(func(gtx C) D {
+			return layout.Inset{Left: 12, Bottom: 4}.Layout(gtx, func(gtx C) D {
+				return a.kit.Label(gtx, kit.TextStyle{Size: a.th().TextSizeSmall, Color: a.th().TextFaint}, "Tools")
+			})
+		}))
 
 		for i := 1; i < len(a.tools.list); i++ {
 			if a.tools.list[i] == core.Tool(a.tools.sftp) {
@@ -345,7 +368,15 @@ func (c *chrome) header(a *App, gtx C) D {
 
 	children = append(children,
 		icon(&c.toolPanel, icons.SidebarRight, a.tools.open[core.Right] >= 0),
-		layout.Rigid(kit.Gap(8)),
+		layout.Rigid(func(gtx C) D {
+			if titlebar.Native {
+				return D{}
+			}
+
+			size := image.Pt(gtx.Dp(17), gtx.Dp(16))
+			kit.Rect(gtx, image.Rect(gtx.Dp(8), 0, gtx.Dp(9), size.Y), th.Divider)
+			return D{Size: size}
+		}),
 		layout.Rigid(func(gtx C) D { return c.windowControls(a, gtx) }),
 	)
 
@@ -404,7 +435,7 @@ func (c *chrome) searchBar(a *App, gtx C) D {
 		layout.Inset{Left: 10, Right: 10}.Layout(gtx, func(gtx C) D {
 			return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 				layout.Rigid(func(gtx C) D { return icons.Search.Layout(gtx, 16, th.TextMuted) }),
-				layout.Rigid(kit.Gap(8)),
+				layout.Rigid(kit.Gap(10)),
 				layout.Flexed(1, func(gtx C) D {
 					gtx.Constraints.Min.Y = h
 					return layout.W.Layout(gtx, func(gtx C) D {
