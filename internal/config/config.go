@@ -43,14 +43,23 @@ type Settings struct {
 	Onboarded     bool    `json:"onboarded"`
 	RestoreTabs   bool    `json:"restoreTabs"`
 	Ligatures     bool    `json:"ligatures"`
+	Highlight     bool    `json:"highlightOutput"`
 	Clipboard     string  `json:"serverClipboard"`
 	AutoUpdate    bool    `json:"autoUpdate"`
 	BroadcastSkip string  `json:"broadcastSkipTags"`
+	Accent        string  `json:"accent"`
+	Density       string  `json:"density"`
+	Corners       string  `json:"corners"`
+	TermScheme    string  `json:"terminalScheme"`
+	TabStyle      string  `json:"tabStyle"`
+	TabIcons      bool    `json:"tabIcons"`
 }
 
 const designVersion = 3
 
-var themes = map[string]struct{}{"carbon": {}, "graphite": {}, "midnight": {}, "paper": {}}
+var themes = map[string]struct{}{"carbon": {}, "graphite": {}, "midnight": {}, "paper": {}, "catppuccin": {}, "rosepine": {}, "nord": {}, "everforest": {}, "gruvbox": {}, "tokyonight": {}, "latte": {}, "dawn": {}}
+
+var renamedThemes = map[string]string{"ember": "gruvbox", "tide": "tokyonight", "moss": "everforest", "dusk": "catppuccin", "bloom": "latte"}
 
 func Defaults() Settings {
 	return Settings{
@@ -68,9 +77,14 @@ func Defaults() Settings {
 		Clipboard:     ClipboardAsk,
 		AutoUpdate:    true,
 		Ligatures:     true,
+		Highlight:     true,
 		BroadcastSkip: "prod, production",
 		SidebarWidth:  280,
 		SidebarOpen:   "hosts",
+		Density:       "normal",
+		Corners:       "normal",
+		TabStyle:      "classic",
+		TabIcons:      true,
 		DesignVersion: designVersion,
 	}
 }
@@ -136,6 +150,10 @@ func (s Settings) sanitized() Settings {
 		}
 
 		s.DesignVersion = designVersion
+	}
+
+	if n, ok := renamedThemes[s.Theme]; ok {
+		s.Theme = n
 	}
 
 	if _, ok := themes[s.Theme]; !ok {

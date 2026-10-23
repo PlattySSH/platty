@@ -141,7 +141,7 @@ func (k *Kit) Toggle(gtx C, b *widget.Bool) D {
 
 	return b.Layout(gtx, func(gtx C) D {
 		w, h := gtx.Dp(36), gtx.Dp(20)
-		bg := Lerp(Lerp(th.FieldLine, th.TextFaint, hv*0.5), th.Text, t)
+		bg := Lerp(Lerp(th.FieldLine, th.TextFaint, hv*0.5), th.Accent, t)
 		RRect(gtx, image.Rect(0, 0, w, h), h/2, bg)
 
 		pad := gtx.Dp(3)
@@ -168,8 +168,8 @@ func (k *Kit) Checkbox(gtx C, b *widget.Bool, label string) D {
 			layout.Rigid(func(gtx C) D {
 				s := gtx.Dp(18)
 				r := image.Rect(0, 0, s, s)
-				RRect(gtx, r, gtx.Dp(5), Lerp(th.Field, th.Text, t))
-				Border(gtx, r, gtx.Dp(5), 1, Lerp(th.FieldLine, th.Text, t))
+				RRect(gtx, r, gtx.Dp(5), Lerp(th.Field, th.Accent, t))
+				Border(gtx, r, gtx.Dp(5), 1, Lerp(th.FieldLine, th.Accent, t))
 
 				if t > 0 {
 					icons.Check.Layout(gtx, 18, Fade(th.OnAccent, t))

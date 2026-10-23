@@ -71,14 +71,21 @@ type Dialog struct {
 	dlg   kit.Dialog
 
 	pages    []widget.Clickable
-	theme    kit.Segmented
+	theme    kit.Select
 	cur      kit.Segmented
 	clip     kit.Segmented
 	shell    kit.Select
 	termFont kit.Select
+	scheme   kit.Select
+	density  kit.Segmented
+	corners  kit.Segmented
+	tabStyle kit.Segmented
+	accents  []widget.Clickable
+	accent   string
+	tabIcons widget.Bool
 
 	fontSize, lineHeight, scrollback, keepAlive     widget.Editor
-	blink, copySel, confirm, hideIPs, restore, ligs widget.Bool
+	blink, copySel, confirm, hideIPs, restore, ligs, hl widget.Bool
 	autoUpdate                                      widget.Bool
 	skipTags                                        widget.Editor
 
@@ -131,6 +138,14 @@ func New(a core.Host) *Dialog {
 	d.hideIPs.Value = s.HideAddresses
 	d.restore.Value = s.RestoreTabs
 	d.ligs.Value = s.Ligatures
+	d.hl.Value = s.Highlight
+	d.tabIcons.Value = s.TabIcons
+	d.accent = s.Accent
+	d.accents = make([]widget.Clickable, len(theme.Accents))
+	d.density.Value = index(theme.Densities, s.Density)
+	d.corners.Value = index(theme.CornerStyles, s.Corners)
+	d.tabStyle.Value = index(tabStyles, s.TabStyle)
+	d.scheme.Value = max(0, index(theme.Schemes(), s.TermScheme))
 	d.autoUpdate.Value = s.AutoUpdate
 
 	for i, name := range fonts.TerminalFonts {
@@ -177,6 +192,17 @@ func (d *Dialog) collect(a core.Host) config.Settings {
 	s.HideAddresses = d.hideIPs.Value
 	s.RestoreTabs = d.restore.Value
 	s.Ligatures = d.ligs.Value
+	s.Highlight = d.hl.Value
+	s.TabIcons = d.tabIcons.Value
+	s.Accent = d.accent
+	s.Density = theme.Densities[d.density.Value]
+	s.Corners = theme.CornerStyles[d.corners.Value]
+	s.TabStyle = tabStyles[d.tabStyle.Value]
+	s.TermScheme = ""
+
+	if d.scheme.Value > 0 {
+		s.TermScheme = theme.Schemes()[d.scheme.Value]
+	}
 	s.AutoUpdate = d.autoUpdate.Value
 	s.BroadcastSkip = strings.TrimSpace(d.skipTags.Text())
 	s.LockAfter = lockAfterMinutes[d.sec.lockAfter.Value]
@@ -316,7 +342,19 @@ func (d *Dialog) content(a core.Host, gtx C) D {
 	case 0:
 		children = []layout.FlexChild{
 			header,
-			row("Theme", left(func(gtx C) D { return k.Segmented(gtx, &d.theme, theme.Labels) })),
+			row("Theme", func(gtx C) D {
+				gtx.Constraints.Max.X = min(gtx.Constraints.Max.X, gtx.Dp(280))
+				return k.Select(gtx, &d.theme, theme.Labels)
+			}),
+			row("Accent color", left(func(gtx C) D { return d.swatches(a, gtx) })),
+			row("Density", left(func(gtx C) D { return k.Segmented(gtx, &d.density, []string{"Compact", "Normal", "Comfortable"}) })),
+			row("Corners", left(func(gtx C) D { return k.Segmented(gtx, &d.corners, []string{"Sharp", "Normal", "Round"}) })),
+			row("Tabs", left(func(gtx C) D { return k.Segmented(gtx, &d.tabStyle, []string{"Classic", "Pill", "Underline"}) })),
+			row("Tab icons", left(func(gtx C) D { return k.Toggle(gtx, &d.tabIcons) })),
+			row("Terminal colors", func(gtx C) D {
+				gtx.Constraints.Max.X = min(gtx.Constraints.Max.X, gtx.Dp(280))
+				return k.Select(gtx, &d.scheme, theme.Schemes())
+			}),
 			row("Interface font", left(func(gtx C) D { return k.Muted(gtx, "Geist") })),
 			row("Terminal font", func(gtx C) D {
 				gtx.Constraints.Max.X = min(gtx.Constraints.Max.X, gtx.Dp(280))
@@ -353,6 +391,15 @@ func (d *Dialog) content(a core.Host, gtx C) D {
 			row("Programs can copy", left(func(gtx C) D { return k.Segmented(gtx, &d.clip, []string{"Ask", "Allow", "Block"}) })),
 			row("Reopen tabs on start", left(func(gtx C) D { return k.Toggle(gtx, &d.restore) })),
 			row("Font ligatures", left(func(gtx C) D { return k.Toggle(gtx, &d.ligs) })),
+			row("Highlight output", left(func(gtx C) D {
+				return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
+					layout.Rigid(func(gtx C) D { return k.Toggle(gtx, &d.hl) }),
+					layout.Rigid(kit.Gap(12)),
+					layout.Rigid(func(gtx C) D {
+						return k.Label(gtx, kit.TextStyle{Size: th.TextSizeSmall, Color: th.TextMuted}, "IPs, URLs, paths, dates and errors")
+					}),
+				)
+			})),
 			row("Scrollback lines", left(narrow(&d.scrollback, "10000"))),
 			row("Leave out of broadcast", func(gtx C) D {
 				gtx.Constraints.Max.X = min(gtx.Constraints.Max.X, gtx.Dp(280))
