@@ -88,6 +88,12 @@ func (v *View) paintRows(gtx layout.Context, fresh bool) {
 func (v *View) updateRows() {
 	f := &v.frame
 	c := &v.cache
+
+	if f.AltScreen != v.hlAlt {
+		v.hlAlt = f.AltScreen
+		c.invalidate()
+	}
+
 	c.dirty = c.dirty[:0]
 	c.pool = c.pool[:0]
 
@@ -155,6 +161,7 @@ func (v *View) updateRows() {
 }
 
 func (v *View) rasterRow(img *image.RGBA, cells []vt.Cell) {
+	cells = v.highlight(cells)
 	b := img.Bounds()
 
 	for y := b.Min.Y; y < b.Max.Y; y++ {

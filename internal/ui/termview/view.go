@@ -51,6 +51,7 @@ type Settings struct {
 	CursorBlink  bool
 	CopyOnSelect bool
 	Ligatures    bool
+	Highlight    bool
 }
 
 type metrics struct {
@@ -68,6 +69,9 @@ type View struct {
 	glyphs  *glyphs.Cache
 
 	set     Settings
+	hlCells []vt.Cell
+	hlOffs  []int
+	hlAlt   bool
 	m       metrics
 	cols    int
 	rows    int
@@ -119,6 +123,10 @@ func New(b Backend, k *kit.Kit, fonts *glyphs.Set, s Settings) *View {
 }
 
 func (v *View) SetSettings(s Settings) {
+	if s.Highlight != v.set.Highlight {
+		v.cache.invalidate()
+	}
+
 	if s.TextSize == 0 {
 		s.TextSize = 13
 	}

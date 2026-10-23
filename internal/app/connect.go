@@ -66,6 +66,7 @@ func (a *App) termSettings() termview.Settings {
 		CursorBlink:  s.CursorBlink,
 		CopyOnSelect: s.CopyOnSelect,
 		Ligatures:    s.Ligatures,
+		Highlight:    s.Highlight,
 	}
 }
 
