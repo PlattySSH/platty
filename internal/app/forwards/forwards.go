@@ -182,7 +182,7 @@ func (p *Panel) handleMenu(a core.Host) {
 	case fwdMenuEdit:
 		a.OpenIn(p, NewEditor(a, r))
 	case fwdMenuDelete:
-		a.Open(dialogs.NewConfirm(a.Kit(), "Delete rule", "Delete “"+tunnel.Label(r)+"”?", "Delete", func() {
+		a.Open(dialogs.NewConfirm(a.Kit(), "Delete this rule?", "“"+tunnel.Label(r)+"” will stop forwarding and be removed.", "Delete", func() {
 			a.Tunnels().Stop(r.ID)
 			a.Vault().DeleteForward(r.ID)
 		}))
@@ -296,7 +296,7 @@ func (e *Editor) Layout(gtx C) bool {
 
 	row := func(label string, w layout.Widget) layout.FlexChild {
 		return layout.Rigid(func(gtx C) D {
-			return layout.Inset{Bottom: 10}.Layout(gtx, func(gtx C) D {
+			return layout.Inset{Bottom: 14}.Layout(gtx, func(gtx C) D {
 				return k.FormRow(gtx, label, dialogs.LabelWidth, w)
 			})
 		})
@@ -313,13 +313,19 @@ func (e *Editor) Layout(gtx C) bool {
 	children := []layout.FlexChild{
 		row("Type", func(gtx C) D { return k.Segmented(gtx, &e.kind, []string{"Local", "Remote", "Dynamic"}) }),
 		layout.Rigid(func(gtx C) D {
-			return layout.Inset{Left: dialogs.LabelWidth, Bottom: 12}.Layout(gtx, func(gtx C) D {
-				return k.Label(gtx, kit.TextStyle{Size: th.TextSizeSmall, Color: th.TextMuted, MaxLines: 2}, descs[e.kind.Value])
+			in := layout.Inset{Left: dialogs.LabelWidth, Bottom: 14}
+
+			if k.Narrow() {
+				in = layout.Inset{Top: -4, Bottom: 14}
+			}
+
+			return in.Layout(gtx, func(gtx C) D {
+				return k.Label(gtx, kit.TextStyle{Size: th.TextSizeSmall, Color: th.TextMuted, MaxLines: 4}, descs[e.kind.Value])
 			})
 		}),
 		row("Host", func(gtx C) D {
 			if len(e.names) == 0 {
-				return k.Muted(gtx, "Save a host first.")
+				return k.Label(gtx, kit.TextStyle{Size: th.TextSizeSmall, Color: th.TextMuted, MaxLines: 2}, "No saved hosts yet. Save one first, then add the rule here.")
 			}
 
 			return k.Select(gtx, &e.host, e.names)
@@ -351,13 +357,14 @@ func (e *Editor) Layout(gtx C) bool {
 	}
 
 	return k.Dialog(gtx, &e.dlg, kit.DialogOpts{
-		Title: title,
-		Width: 560,
+		Title:    title,
+		Subtitle: "Send traffic for a port through one of your SSH hosts.",
+		Width:    560,
 		Body: func(gtx C) D {
 			return layout.Flex{Axis: layout.Vertical}.Layout(gtx, children...)
 		},
 		Footer: kit.Buttons(
-			func(gtx C) D { return k.Button(gtx, &e.cancel, kit.Secondary, nil, "Cancel") },
+			func(gtx C) D { return k.Button(gtx, &e.cancel, kit.Ghost, nil, "Cancel") },
 			func(gtx C) D { return k.Button(gtx, &e.save, kit.Primary, nil, "Save") },
 		),
 	})

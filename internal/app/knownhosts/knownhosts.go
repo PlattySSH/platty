@@ -50,7 +50,7 @@ func (p *Panel) Body(gtx C) D {
 
 	if i, ok := p.menu.Chosen(); ok && i == 0 {
 		host := p.pick.Host
-		a.Open(dialogs.NewConfirm(a.Kit(), "Forget host", "You'll be asked to confirm again the next time you connect to "+host+".", "Forget", func() {
+		a.Open(dialogs.NewConfirm(a.Kit(), "Forget this host?", "You'll be asked to confirm again the next time you connect to "+host+".", "Forget", func() {
 			a.Vault().ForgetHost(host)
 		}))
 	}
@@ -87,7 +87,7 @@ func (p *Panel) Body(gtx C) D {
 
 		if fg.Clicked(gtx) {
 			host := kh.Host
-			a.Open(dialogs.NewConfirm(a.Kit(), "Forget host", "You'll be asked to confirm again the next time you connect to "+host+".", "Forget", func() {
+			a.Open(dialogs.NewConfirm(a.Kit(), "Forget this host?", "You'll be asked to confirm again the next time you connect to "+host+".", "Forget", func() {
 				a.Vault().ForgetHost(host)
 			}))
 		}

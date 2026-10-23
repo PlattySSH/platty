@@ -114,7 +114,7 @@ func (p *Panel) rename(a core.Host, c *sftpConn, cwd string, e sshx.Entry) {
 
 func (p *Panel) remove(a core.Host, c *sftpConn, cwd string, e sshx.Entry) {
 	full := path.Join(cwd, e.Name)
-	a.Open(dialogs.NewConfirm(a.Kit(), "Delete", "Delete “"+e.Name+"” from the server? This can't be undone.", "Delete", func() {
+	a.Open(dialogs.NewConfirm(a.Kit(), "Delete from the server?", "“"+e.Name+"” will be permanently deleted. This can't be undone.", "Delete", func() {
 		go func() {
 			if err := c.sftp().RemoveAll(full); err != nil {
 				a.Toasts().Error("Couldn't delete", err.Error())

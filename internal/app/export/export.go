@@ -223,15 +223,16 @@ func (d *Dialog) Layout(gtx C) bool {
 	children = append(children, muted("Anyone with the file and its password can read what's inside, so keep them apart. Platty can't recover a lost password."))
 
 	return k.Dialog(gtx, &d.dlg, kit.DialogOpts{
-		Title: "Export data",
-		Width: 520,
+		Title:    "Export data",
+		Subtitle: "Creates an encrypted .platty file you can import on another computer.",
+		Width:    520,
 		Body: func(gtx C) D {
 			return d.list.Layout(gtx, 1, func(gtx C, _ int) D {
 				return layout.Flex{Axis: layout.Vertical}.Layout(gtx, children...)
 			})
 		},
 		Footer: kit.Buttons(
-			func(gtx C) D { return k.Button(gtx, &d.cancel, kit.Secondary, nil, "Cancel") },
+			func(gtx C) D { return k.Button(gtx, &d.cancel, kit.Ghost, nil, "Cancel") },
 			func(gtx C) D { return k.Button(gtx, &d.ok, kit.Primary, icons.Download, "Export…") },
 		),
 	})

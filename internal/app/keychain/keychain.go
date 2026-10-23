@@ -260,7 +260,7 @@ func (p *Panel) handleMenu(a core.Host, gtx C) {
 
 		go attachCertificate(a, key)
 	case keyMenuDelete:
-		a.Open(dialogs.NewConfirm(a.Kit(), "Delete key", "Delete “"+key.Label+"”? Hosts using it will authenticate with the agent instead.", "Delete", func() {
+		a.Open(dialogs.NewConfirm(a.Kit(), "Delete this key?", "“"+key.Label+"” will be removed from the vault. Hosts that use it will sign in with the agent instead.", "Delete", func() {
 			a.Vault().DeleteKey(key.ID)
 		}))
 	}
@@ -277,9 +277,10 @@ type GenerateKey struct {
 }
 
 func NewGenerateKey(a core.Host) *GenerateKey {
-	pass := dialogs.NewField("Passphrase (optional)", "Protects the private key", "")
+	pass := dialogs.NewField("Passphrase", "Optional, protects the private key", "")
 	pass.Secret = true
-	g := &GenerateKey{h: a, Form: dialogs.NewForm(a.Kit(), "Generate ed25519 key", "Generate", dialogs.NewField("Name", "my-laptop", ""), pass)}
+	g := &GenerateKey{h: a, Form: dialogs.NewForm(a.Kit(), "New SSH key", "Generate key", dialogs.NewField("Name", "e.g. my-laptop", ""), pass)}
+	g.Subtitle = "Creates an ed25519 key pair, stored encrypted in your vault."
 	g.Extra = func(gtx C) D {
 		return a.Kit().Checkbox(gtx, &g.keep, "Remember the passphrase in the vault")
 	}
@@ -340,17 +341,10 @@ func (g *GenerateKey) Layout(gtx C) bool {
 	}
 
 	return k.Dialog(gtx, &g.dlg2, kit.DialogOpts{
-		Title: "Key generated",
-		Width: 560,
-		Body: func(gtx C) D {
-			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-				layout.Rigid(func(gtx C) D {
-					return k.Label(gtx, kit.TextStyle{MaxLines: 3}, "Add this public key to ~/.ssh/authorized_keys on your servers:")
-				}),
-				layout.Rigid(kit.Gap(10)),
-				layout.Rigid(func(gtx C) D { return keyBox(a, gtx, *g.generated) }),
-			)
-		},
+		Title:    "Your key is ready",
+		Subtitle: "Add this public key to ~/.ssh/authorized_keys on each server you want to reach.",
+		Width:    560,
+		Body:     func(gtx C) D { return keyBox(a, gtx, *g.generated) },
 		Footer: kit.Buttons(
 			func(gtx C) D { return k.Button(gtx, &g.copy, kit.Secondary, icons.Copy, "Copy") },
 			func(gtx C) D { return k.Button(gtx, &g.done, kit.Primary, nil, "Done") },

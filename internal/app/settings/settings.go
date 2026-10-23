@@ -260,7 +260,7 @@ func (d *Dialog) Layout(gtx C) bool {
 			)
 		},
 		Footer: kit.Buttons(
-			func(gtx C) D { return k.Button(gtx, &d.cancel, kit.Secondary, nil, "Cancel") },
+			func(gtx C) D { return k.Button(gtx, &d.cancel, kit.Ghost, nil, "Cancel") },
 			func(gtx C) D { return k.Button(gtx, &d.apply, kit.Secondary, nil, "Apply") },
 			func(gtx C) D { return k.Button(gtx, &d.ok, kit.Primary, nil, "OK") },
 		),
