@@ -39,7 +39,7 @@ func (k *Kit) Button(gtx C, clk *widget.Clickable, kind ButtonKind, ic *icons.Ic
 
 	switch kind {
 	case Primary:
-		bg, fg = Lerp(th.Text, th.TextMuted, 0.2*h), th.OnAccent
+		bg, fg = Lerp(th.Accent, th.AccentHover, h), th.OnAccent
 	case Danger:
 		bg, fg, line = Fade(th.Danger, 0.12+0.1*h), th.Danger, Fade(th.Danger, 0.5)
 	case Secondary:
@@ -53,7 +53,7 @@ func (k *Kit) Button(gtx C, clk *widget.Clickable, kind ButtonKind, ic *icons.Ic
 	weight := font.Medium
 
 	if kind == Primary {
-		weight, ic = font.Bold, nil
+		weight = font.Bold
 	}
 
 	return clk.Layout(gtx, func(gtx C) D {

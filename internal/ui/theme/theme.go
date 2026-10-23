@@ -8,15 +8,23 @@ import (
 )
 
 const (
-	Carbon   = "carbon"
-	Graphite = "graphite"
-	Midnight = "midnight"
-	Paper    = "paper"
+	Carbon     = "carbon"
+	Graphite   = "graphite"
+	Midnight   = "midnight"
+	Paper      = "paper"
+	Catppuccin = "catppuccin"
+	RosePine   = "rosepine"
+	Nord       = "nord"
+	Everforest = "everforest"
+	Gruvbox    = "gruvbox"
+	TokyoNight = "tokyonight"
+	Latte      = "latte"
+	Dawn       = "dawn"
 )
 
-var Names = []string{Carbon, Graphite, Midnight, Paper}
+var Names = []string{Carbon, Graphite, Midnight, Paper, Catppuccin, RosePine, Nord, Everforest, Gruvbox, TokyoNight, Latte, Dawn}
 
-var Labels = []string{"Carbon", "Graphite", "Midnight", "Paper"}
+var Labels = []string{"Carbon", "Graphite", "Midnight", "Paper", "Catppuccin", "Rosé Pine", "Nord", "Everforest", "Gruvbox", "Tokyo Night", "Latte", "Rosé Pine Dawn"}
 
 type Metrics struct {
 	ToolbarHeight unit.Dp
@@ -119,21 +127,23 @@ type spec struct {
 	raised, popup      uint32
 	text, muted, faint uint32
 	danger             uint32
+	accent             uint32
+	success, warning   uint32
 	ansi               [16]uint32
 }
 
 var ansiDark = [16]uint32{
-	0x1c1c1c, 0xe0625a, 0x93bf8f, 0xd6bb82,
-	0x87a4c8, 0xb69ac8, 0x8cc2ba, 0xbdbdbd,
-	0x525252, 0xe39598, 0xaad2a6, 0xe3cc9c,
-	0xa1bad9, 0xcab3d9, 0xa6d4cd, 0xf2f2f2,
+	0x1c1c1c, 0xf0605a, 0x8fd16a, 0xf2c45c,
+	0x5fa8f5, 0xc58af0, 0x4fd1c5, 0xc8c8c8,
+	0x5a5a5a, 0xff8a84, 0xaee68f, 0xffd98a,
+	0x8cc2ff, 0xdbb0ff, 0x7fe6da, 0xf4f4f4,
 }
 
 var ansiLight = [16]uint32{
-	0x1f1f1f, 0xb5403f, 0x3f7a3a, 0x8a6a1f,
-	0x3a5f94, 0x7a4f94, 0x2f7a72, 0x8a8a8a,
-	0x5c5c5c, 0xc95553, 0x4f8f4a, 0xa07d2c,
-	0x4d72a8, 0x8d61a8, 0x3c8e85, 0xa3a3a3,
+	0x1f1f1f, 0xc8352f, 0x3d8a26, 0x9a6a00,
+	0x2563c9, 0x8a3fc4, 0x14857a, 0x8a8a8a,
+	0x5c5c5c, 0xe0483f, 0x4ea332, 0xb88200,
+	0x3b7be0, 0xa45ad9, 0x1f9e91, 0xa3a3a3,
 }
 
 var specs = map[string]spec{
@@ -161,14 +171,93 @@ var specs = map[string]spec{
 		text: 0x1c1a17, muted: 0x6f6a63, faint: 0xa39e96,
 		danger: 0xc0392b, ansi: ansiLight,
 	},
+	Catppuccin: {
+		name: Catppuccin, dark: true,
+		canvas: 0x181825, surface: 0x1e1e2e, raised: 0x313244, popup: 0x252536,
+		text: 0xcdd6f4, muted: 0xa6adc8, faint: 0x6c7086,
+		danger: 0xf38ba8, accent: 0xcba6f7, success: 0xa6e3a1, warning: 0xf9e2af,
+		ansi: [16]uint32{
+			0x45475a, 0xf38ba8, 0xa6e3a1, 0xf9e2af, 0x89b4fa, 0xf5c2e7, 0x94e2d5, 0xbac2de,
+			0x585b70, 0xf38ba8, 0xa6e3a1, 0xf9e2af, 0x89b4fa, 0xf5c2e7, 0x94e2d5, 0xa6adc8,
+		},
+	},
+	RosePine: {
+		name: RosePine, dark: true,
+		canvas: 0x191724, surface: 0x1f1d2e, raised: 0x26233a, popup: 0x24223a,
+		text: 0xe0def4, muted: 0x908caa, faint: 0x6e6a86,
+		danger: 0xeb6f92, accent: 0xebbcba, success: 0x9ccfd8, warning: 0xf6c177,
+		ansi: [16]uint32{
+			0x26233a, 0xeb6f92, 0x31748f, 0xf6c177, 0x9ccfd8, 0xc4a7e7, 0xebbcba, 0xe0def4,
+			0x6e6a86, 0xeb6f92, 0x31748f, 0xf6c177, 0x9ccfd8, 0xc4a7e7, 0xebbcba, 0xe0def4,
+		},
+	},
+	Nord: {
+		name: Nord, dark: true,
+		canvas: 0x242933, surface: 0x2e3440, raised: 0x3b4252, popup: 0x343a47,
+		text: 0xeceff4, muted: 0xa3acbd, faint: 0x6b768a,
+		danger: 0xbf616a, accent: 0x88c0d0, success: 0xa3be8c, warning: 0xebcb8b,
+		ansi: [16]uint32{
+			0x3b4252, 0xbf616a, 0xa3be8c, 0xebcb8b, 0x81a1c1, 0xb48ead, 0x88c0d0, 0xe5e9f0,
+			0x4c566a, 0xbf616a, 0xa3be8c, 0xebcb8b, 0x81a1c1, 0xb48ead, 0x8fbcbb, 0xeceff4,
+		},
+	},
+	Everforest: {
+		name: Everforest, dark: true,
+		canvas: 0x232a2e, surface: 0x2d353b, raised: 0x3d484d, popup: 0x343f44,
+		text: 0xd3c6aa, muted: 0x9da9a0, faint: 0x7a8478,
+		danger: 0xe67e80, accent: 0xa7c080, success: 0x83c092, warning: 0xdbbc7f,
+		ansi: [16]uint32{
+			0x475258, 0xe67e80, 0xa7c080, 0xdbbc7f, 0x7fbbb3, 0xd699b6, 0x83c092, 0xd3c6aa,
+			0x5c6a72, 0xe67e80, 0xa7c080, 0xdbbc7f, 0x7fbbb3, 0xd699b6, 0x83c092, 0xd3c6aa,
+		},
+	},
+	Gruvbox: {
+		name: Gruvbox, dark: true,
+		canvas: 0x1d2021, surface: 0x282828, raised: 0x3c3836, popup: 0x32302f,
+		text: 0xebdbb2, muted: 0xa89984, faint: 0x7c6f64,
+		danger: 0xfb4934, accent: 0xfe8019, success: 0xb8bb26, warning: 0xfabd2f,
+		ansi: [16]uint32{
+			0x282828, 0xcc241d, 0x98971a, 0xd79921, 0x458588, 0xb16286, 0x689d6a, 0xa89984,
+			0x928374, 0xfb4934, 0xb8bb26, 0xfabd2f, 0x83a598, 0xd3869b, 0x8ec07c, 0xebdbb2,
+		},
+	},
+	TokyoNight: {
+		name: TokyoNight, dark: true,
+		canvas: 0x16161e, surface: 0x1a1b26, raised: 0x292e42, popup: 0x1f2335,
+		text: 0xc0caf5, muted: 0x9aa5ce, faint: 0x565f89,
+		danger: 0xf7768e, accent: 0x7aa2f7, success: 0x9ece6a, warning: 0xe0af68,
+		ansi: [16]uint32{
+			0x15161e, 0xf7768e, 0x9ece6a, 0xe0af68, 0x7aa2f7, 0xbb9af7, 0x7dcfff, 0xa9b1d6,
+			0x414868, 0xf7768e, 0x9ece6a, 0xe0af68, 0x7aa2f7, 0xbb9af7, 0x7dcfff, 0xc0caf5,
+		},
+	},
+	Latte: {
+		name: Latte, dark: false,
+		canvas: 0xe6e9ef, surface: 0xeff1f5, raised: 0xdce0e8, popup: 0xf7f8fa,
+		text: 0x4c4f69, muted: 0x6c6f85, faint: 0x9ca0b0,
+		danger: 0xd20f39, accent: 0x8839ef, success: 0x40a02b, warning: 0xdf8e1d,
+		ansi: [16]uint32{
+			0x5c5f77, 0xd20f39, 0x40a02b, 0xdf8e1d, 0x1e66f5, 0xea76cb, 0x179299, 0xacb0be,
+			0x6c6f85, 0xd20f39, 0x40a02b, 0xdf8e1d, 0x1e66f5, 0xea76cb, 0x179299, 0xbcc0cc,
+		},
+	},
+	Dawn: {
+		name: Dawn, dark: false,
+		canvas: 0xf2e9e1, surface: 0xfaf4ed, raised: 0xebe0d6, popup: 0xfffaf3,
+		text: 0x575279, muted: 0x797593, faint: 0x9893a5,
+		danger: 0xb4637a, accent: 0xd7827e, success: 0x56949f, warning: 0xea9d34,
+		ansi: [16]uint32{
+			0xf2e9e1, 0xb4637a, 0x286983, 0xea9d34, 0x56949f, 0x907aa9, 0xd7827e, 0x575279,
+			0x9893a5, 0xb4637a, 0x286983, 0xea9d34, 0x56949f, 0x907aa9, 0xd7827e, 0x575279,
+		},
+	},
 }
 
 func New(name string) *Theme {
-	sp, ok := specs[name]
+	return Build(name, Options{})
+}
 
-	if !ok {
-		sp = specs[Carbon]
-	}
+func build(sp spec) *Theme {
 
 	surface, text := hex(sp.surface), hex(sp.text)
 	fg := color.NRGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff}
@@ -219,6 +308,22 @@ func New(name string) *Theme {
 	t.Success = t.Text
 	t.Warning = t.TextMuted
 
+	if sp.accent != 0 {
+		accent := hex(sp.accent)
+		t.Accent, t.AccentHover, t.AccentSoft = accent, Mix(accent, fg, 0.2), alpha(accent, 0x26)
+		t.Success, t.Warning = hex(sp.success), hex(sp.warning)
+		t.Cursor, t.SearchMatch = accent, alpha(accent, 0x55)
+		t.TermSelect = Mix(surface, accent, 0.25)
+
+		if sp.dark {
+			t.OnAccent = hex(sp.canvas)
+		}
+
+		for _, i := range []int{12, 10, 11, 9, 13, 14} {
+			t.Tags = append(t.Tags, hex(sp.ansi[i]))
+		}
+	}
+
 	if !sp.dark {
 		t.Scrim = alpha(hex(0x000000), 0x33)
 		t.Dim = alpha(surface, 0x55)
@@ -236,12 +341,20 @@ func New(name string) *Theme {
 	return t
 }
 
+func (t *Theme) Colorful() bool {
+	return len(t.Tags) > 0
+}
+
 func (t *Theme) OnFrame() *Theme {
 	return t
 }
 
 func (t *Theme) TagColor(i int) color.NRGBA {
-	return t.TextMuted
+	if len(t.Tags) == 0 {
+		return t.TextMuted
+	}
+
+	return t.Tags[(i%len(t.Tags)+len(t.Tags))%len(t.Tags)]
 }
 
 func (t *Theme) buildPalette() {

@@ -3,6 +3,7 @@ package onboarding
 import (
 	"fmt"
 	"image"
+	"image/color"
 
 	"gioui.org/font"
 	"gioui.org/layout"
@@ -44,22 +45,39 @@ func (d *Intro) welcome(gtx C) D {
 func (d *Intro) look(gtx C) D {
 	k := d.h.Kit()
 	current := d.h.Settings().Theme
-	cards := make([]layout.FlexChild, 0, 2*len(theme.Names))
+	const perRow = 4
+	var rows []layout.FlexChild
 
-	for i, name := range theme.Names {
-		if i > 0 {
-			cards = append(cards, layout.Rigid(kit.Gap(10)))
+	for start := 0; start < len(theme.Names); start += perRow {
+		cards := make([]layout.FlexChild, 0, 2*perRow)
+
+		for i := start; i < start+perRow; i++ {
+			if i > start {
+				cards = append(cards, layout.Rigid(kit.Gap(10)))
+			}
+
+			if i >= len(theme.Names) {
+				cards = append(cards, layout.Flexed(1, func(gtx C) D { return D{} }))
+				continue
+			}
+
+			name := theme.Names[i]
+			cards = append(cards, layout.Flexed(1, func(gtx C) D {
+				return d.themeCard(gtx, &d.themes[i], name, theme.Labels[i], name == current)
+			}))
 		}
 
-		cards = append(cards, layout.Flexed(1, func(gtx C) D {
-			return d.themeCard(gtx, &d.themes[i], name, theme.Labels[i], name == current)
-		}))
+		if start > 0 {
+			rows = append(rows, layout.Rigid(kit.Gap(12)))
+		}
+
+		rows = append(rows, layout.Rigid(func(gtx C) D { return layout.Flex{}.Layout(gtx, cards...) }))
 	}
 
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 		layout.Rigid(func(gtx C) D { return k.SectionTitle(gtx, "THEME") }),
 		layout.Rigid(kit.Gap(10)),
-		layout.Rigid(func(gtx C) D { return layout.Flex{}.Layout(gtx, cards...) }),
+		layout.Rigid(func(gtx C) D { return layout.Flex{Axis: layout.Vertical}.Layout(gtx, rows...) }),
 		layout.Rigid(kit.Gap(22)),
 		layout.Rigid(func(gtx C) D { return k.SectionTitle(gtx, "TERMINAL FONT") }),
 		layout.Rigid(kit.Gap(10)),
@@ -88,7 +106,7 @@ func (d *Intro) themeCard(gtx C, clk *widget.Clickable, name, label string, sele
 			y := inner.Min.Y + gtx.Dp(8) + i*gtx.Dp(10)
 			x0 := inner.Min.X + gtx.Dp(8)
 			x1 := x0 + int(float32(inner.Dx()-gtx.Dp(16))*frac)
-			kit.RRect(gtx, image.Rect(x0, y, x1, y+gtx.Dp(4)), gtx.Dp(2), kit.Fade(t.Text, 0.5+0.2*float32(1-i%2)))
+			kit.RRect(gtx, image.Rect(x0, y, x1, y+gtx.Dp(4)), gtx.Dp(2), kit.Fade(previewLine(t, i), 0.5+0.2*float32(1-i%2)))
 		}
 
 		for i := range 3 {
@@ -270,4 +288,17 @@ func (d *Intro) done(gtx C) D {
 	}
 
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx, rows...)
+}
+
+func previewLine(t *theme.Theme, i int) color.NRGBA {
+	switch {
+	case !t.Colorful():
+		return t.Text
+	case i == 0:
+		return t.Accent
+	case i == 2:
+		return t.Success
+	}
+
+	return t.Text
 }
