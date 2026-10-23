@@ -16,6 +16,7 @@ import (
 	"github.com/plattyssh/platty/internal/sshx"
 	"github.com/plattyssh/platty/internal/ui/icons"
 	"github.com/plattyssh/platty/internal/ui/kit"
+	"github.com/plattyssh/platty/internal/ui/theme"
 )
 
 type (
@@ -33,7 +34,7 @@ func (b *Bar) Items() int {
 	return len(b.hover)
 }
 
-func (b *Bar) Layout(gtx C, k *kit.Kit, s sshx.Stats, have bool, err error) D {
+func (b *Bar) Layout(gtx C, k *kit.Kit, s sshx.Stats, hist History, have bool, err error) D {
 	th := k.Th
 	h := gtx.Dp(Height)
 	size := image.Pt(gtx.Constraints.Max.X, h)
@@ -44,7 +45,7 @@ func (b *Bar) Layout(gtx C, k *kit.Kit, s sshx.Stats, have bool, err error) D {
 
 	switch {
 	case have:
-		ms := serverMetrics(s)
+		ms := serverMetrics(th, s, hist)
 
 		if len(b.hover) < len(ms) {
 			b.hover = make([]widget.Clickable, len(ms))
@@ -74,9 +75,11 @@ type metric struct {
 	value  string
 	title  string
 	detail []string
+	chart  []series
+	top    float64
 }
 
-func serverMetrics(s sshx.Stats) []metric {
+func serverMetrics(th *theme.Theme, s sshx.Stats, hist History) []metric {
 	pct := func(f float64) string { return fmt.Sprintf("%.0f%%", f*100) }
 	size := func(n uint64) string { return format.Size(int64(n)) }
 
@@ -85,6 +88,8 @@ func serverMetrics(s sshx.Stats) []metric {
 	if s.CPU >= 0 {
 		cpu.value = pct(s.CPU)
 	}
+
+	cpu.chart, cpu.top = []series{{values: hist.CPU, color: level(th, cpu.frac), fill: true}}, 1
 
 	cpu.detail = []string{
 		fmt.Sprintf("%s in use · %d cores", cpu.value, s.Cores),
@@ -98,6 +103,8 @@ func serverMetrics(s sshx.Stats) []metric {
 			size(s.MemTotal-s.MemUsed) + " available",
 		}}
 
+	mem.chart, mem.top = []series{{values: hist.Mem, color: level(th, memFrac), fill: true}}, 1
+
 	if s.SwapTotal > 0 {
 		mem.detail = append(mem.detail, fmt.Sprintf("Swap %s / %s", size(s.SwapUsed), size(s.SwapTotal)))
 	}
@@ -109,6 +116,8 @@ func serverMetrics(s sshx.Stats) []metric {
 			size(s.DiskAvail) + " free",
 		}}
 
+	disk.chart, disk.top = []series{{values: hist.Disk, color: level(th, diskFrac), fill: true}}, 1
+
 	out := []metric{cpu, mem, disk}
 
 	if s.RxRate >= 0 {
@@ -117,7 +126,13 @@ func serverMetrics(s sshx.Stats) []metric {
 			detail: []string{
 				"Received " + size(s.RxTotal) + " since boot",
 				"Sent " + size(s.TxTotal) + " since boot",
-			}})
+			},
+			chart: []series{
+				{values: hist.Rx, color: netColor(th), fill: true},
+				{values: hist.Tx, color: kit.Fade(th.TextMuted, 0.9)},
+			},
+			top: max(peak(hist.Rx, hist.Tx)*1.15, 1024),
+		})
 	}
 
 	out = append(out,
@@ -161,9 +176,15 @@ func (b *Bar) item(gtx C, k *kit.Kit, hover *widget.Clickable, m metric) D {
 		return layout.Inset{Left: 6, Right: 10}.Layout(gtx, func(gtx C) D {
 			gtx.Constraints.Min.Y = gtx.Dp(Height)
 			return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-				layout.Rigid(func(gtx C) D { return m.icon.Layout(gtx, 14, kit.Lerp(th.TextMuted, th.Text, hv)) }),
+				layout.Rigid(func(gtx C) D { return m.icon.Layout(gtx, 14, kit.Lerp(iconColor(th, m), th.Text, hv)) }),
 				layout.Rigid(kit.Gap(6)),
 				layout.Rigid(func(gtx C) D {
+					if len(m.chart) > 0 && len(m.chart[0].values) >= 2 {
+						return layout.Inset{Right: 6}.Layout(gtx, func(gtx C) D {
+							return chart(gtx, image.Pt(gtx.Dp(44), gtx.Dp(14)), m.top, m.chart...)
+						})
+					}
+
 					if m.frac < 0 {
 						return D{}
 					}
@@ -187,6 +208,18 @@ func (b *Bar) item(gtx C, k *kit.Kit, hover *widget.Clickable, m metric) D {
 					return k.Label(gtx, kit.TextStyle{Size: th.TextSizeSmall, Weight: font.SemiBold}, m.title)
 				}),
 				layout.Rigid(kit.Gap(4)),
+			}
+
+			if len(m.chart) > 0 && len(m.chart[0].values) >= 2 {
+				rows = append(rows,
+					layout.Rigid(kit.Gap(4)),
+					layout.Rigid(func(gtx C) D {
+						size := image.Pt(gtx.Dp(260), gtx.Dp(64))
+						kit.RRect(gtx, image.Rectangle{Max: size}, gtx.Dp(th.RadiusSmall), kit.Fade(th.Text, 0.04))
+						return chart(gtx, size, m.top, m.chart...)
+					}),
+					layout.Rigid(kit.Gap(8)),
+				)
 			}
 
 			for _, l := range m.detail {
@@ -213,11 +246,7 @@ func miniBar(gtx C, k *kit.Kit, frac float64) D {
 	w, h := gtx.Dp(38), gtx.Dp(5)
 	r := image.Rect(0, 0, w, h)
 	kit.RRect(gtx, r, h/2, kit.Fade(th.Text, 0.12))
-	fill := th.TextMuted
-
-	if frac > 0.85 {
-		fill = th.Danger
-	}
+	fill := level(th, frac)
 
 	if fw := int(float64(w) * min(max(frac, 0), 1)); fw > 0 {
 		kit.RRect(gtx, image.Rect(0, 0, max(fw, h), h), h/2, color.NRGBA(fill))
