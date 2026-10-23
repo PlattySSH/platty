@@ -478,7 +478,7 @@ func (c *chrome) windowButton(a *App, gtx C, clk *widget.Clickable, ic *icons.Ic
 
 func (c *chrome) toolRow(a *App, gtx C, i int) D {
 	tw := a.tools.list[i]
-	open := a.tools.open[core.Right] == i
+	open := a.tools.open[core.Right] == i && a.docked[core.Right] == nil
 	return c.navRowStyled(a, gtx, &a.tools.rows[i], tw.Icon(), tw.Title(), false, open, nil)
 }
 
