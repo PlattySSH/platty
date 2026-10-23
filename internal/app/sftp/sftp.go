@@ -10,7 +10,10 @@ import (
 
 	"gioui.org/font"
 	"gioui.org/io/clipboard"
+	"gioui.org/io/event"
+	"gioui.org/io/key"
 	"gioui.org/layout"
+	"gioui.org/op/clip"
 	"gioui.org/widget"
 
 	"github.com/plattyssh/platty/internal/app/core"
@@ -27,6 +30,7 @@ const (
 	sftpMenuEdit
 	sftpMenuDownload
 	sftpMenuCopyPath
+	sftpMenuRename
 	sftpMenuSep
 	sftpMenuDelete
 )
@@ -216,6 +220,7 @@ func (p *Panel) Body(gtx C) D {
 	}
 
 	p.handle(a, gtx, c, cwd)
+	p.keys(a, gtx, c, cwd, entries)
 
 	dims := layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
@@ -255,6 +260,14 @@ func (p *Panel) Body(gtx C) D {
 			})
 		}),
 		layout.Flexed(1, func(gtx C) D {
+			area := clip.Rect{Max: gtx.Constraints.Max}.Push(gtx.Ops)
+			event.Op(gtx.Ops, p)
+			area.Pop()
+
+			if len(entries) == 0 && !loading {
+				return k.EmptyState(gtx, icons.FolderOpen, "This folder is empty", "Drag files onto the window or use Upload to add some.")
+			}
+
 			return k.List(gtx, &p.list, len(entries), func(gtx C, i int) D {
 				return p.entryRow(a, gtx, c, cwd, entries[i])
 			})
@@ -340,16 +353,10 @@ func (p *Panel) handle(a core.Host, gtx C, c *sftpConn, cwd string) {
 			p.downloadEntry(a, c, cwd, e.Name)
 		case sftpMenuCopyPath:
 			gtx.Execute(clipboard.WriteCmd{Type: "application/text", Data: io.NopCloser(strings.NewReader(full))})
+		case sftpMenuRename:
+			p.rename(a, c, cwd, e)
 		case sftpMenuDelete:
-			a.Open(dialogs.NewConfirm(a.Kit(), "Delete", "Delete “"+e.Name+"” from the server? This can't be undone.", "Delete", func() {
-				go func() {
-					if err := c.sftp().RemoveAll(full); err != nil {
-						a.Toasts().Error("Couldn't delete", err.Error())
-					}
-
-					p.load(a, c, cwd)
-				}()
-			}))
+			p.remove(a, c, cwd, e)
 		}
 	}
 }
@@ -369,6 +376,7 @@ func (p *Panel) entryRow(a core.Host, gtx C, c *sftpConn, cwd string, e sshx.Ent
 
 	if ev.Click {
 		p.selected = e.Name
+		gtx.Execute(key.FocusCmd{Tag: p})
 	}
 
 	if ev.DoubleClick {
@@ -393,16 +401,13 @@ func (p *Panel) entryRow(a core.Host, gtx C, c *sftpConn, cwd string, e sshx.Ent
 			sftpMenuEdit:     {Label: "Edit", Icon: icons.Edit, Disabled: e.IsDir},
 			sftpMenuDownload: {Label: "Download…", Icon: icons.Download},
 			sftpMenuCopyPath: {Label: "Copy path", Icon: icons.Copy},
+			sftpMenuRename:   {Label: "Rename", Icon: icons.Edit, Shortcut: "F2"},
 			sftpMenuSep:      kit.Separator(),
-			sftpMenuDelete:   {Label: "Delete", Icon: icons.Delete, Danger: true},
+			sftpMenuDelete:   {Label: "Delete", Icon: icons.Delete, Danger: true, Shortcut: "Del"},
 		}, ev.At.Add(image.Pt(-gtx.Dp(120), gtx.Dp(4))))
 	}
 
-	ic, col := icons.File, th.TextFaint
-
-	if e.IsDir {
-		ic, col = icons.Folder, th.TextMuted
-	}
+	ic, col := entryStyle(th, e)
 
 	dims := k.Row(gtx, r, kit.RowOpts{Selected: p.selected == e.Name, Focused: true, Height: 46}, func(gtx C) D {
 		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
@@ -456,3 +461,14 @@ type (
 	C = core.C
 	D = core.D
 )
+
+func (p *Panel) Dir(sessID string) string {
+	c := p.connFor(sessID)
+
+	if c == nil {
+		return ""
+	}
+
+	cwd, _, _, _ := c.snapshot()
+	return cwd
+}

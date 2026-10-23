@@ -53,7 +53,16 @@ func (p *Panel) enqueue(a core.Host, c *sftpConn, j *transfer.Job, reload string
 				a.Toasts().Success(verb+j.Name, size(done, j.Files()))
 			}
 		case transfer.Failed:
-			a.Toasts().Error("Transfer failed: "+j.Name, j.Err().Error())
+			if j.Local == "" {
+				a.Toasts().Error("Transfer failed: "+j.Name, j.Err().Error())
+				break
+			}
+
+			retry := &transfer.Job{Kind: j.Kind, Name: j.Name, Local: j.Local, Remote: j.Remote}
+			a.Toasts().ErrorAction("Transfer failed: "+j.Name, j.Err().Error(), "Retry", func() {
+				p.enqueue(a, c, retry, reload, after)
+				a.Invalidate()
+			})
 		}
 
 		if reload != "" && j.State() == transfer.Done {
@@ -150,7 +159,7 @@ func (p *Panel) downloadFolder(a core.Host, c *sftpConn, src string) {
 
 	p.enqueue(a, c, &transfer.Job{Kind: transfer.Download, Name: name, Remote: src, Local: dst}, "", func(j *transfer.Job) {
 		done, _ := j.Progress()
-		a.Toasts().Success("Downloaded "+name, size(done, j.Files())+" · saved in Downloads")
+		a.Toasts().SuccessAction("Downloaded "+name, size(done, j.Files())+" · saved in Downloads", "Open folder", func() { open.File(dst) })
 	})
 }
 
@@ -372,8 +381,14 @@ func bar(gtx C, th *theme.Theme, frac float32) D {
 	w, h := gtx.Constraints.Max.X, gtx.Dp(4)
 	kit.RRect(gtx, image.Rect(0, 0, w, h), h/2, kit.Fade(th.Text, 0.12))
 
+	fill := th.TextMuted
+
+	if th.Colorful() {
+		fill = th.Accent
+	}
+
 	if fw := int(float32(w) * min(max(frac, 0), 1)); fw > 0 {
-		kit.RRect(gtx, image.Rect(0, 0, max(fw, h), h), h/2, th.TextMuted)
+		kit.RRect(gtx, image.Rect(0, 0, max(fw, h), h), h/2, fill)
 	}
 
 	return D{Size: image.Pt(w, h)}
