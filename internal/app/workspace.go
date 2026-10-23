@@ -3,7 +3,6 @@ package app
 import (
 	"image"
 	"image/color"
-	"time"
 
 	"gioui.org/gesture"
 	"gioui.org/io/pointer"
@@ -36,6 +35,7 @@ type Pane struct {
 	origin     origin
 	stats      paneStats
 	connecting connecting
+	failure    failure
 	sess       *session.Session
 	view       *termview.View
 	color      color.NRGBA
@@ -117,6 +117,8 @@ type workspace struct {
 	profile widget.Clickable
 	menu    kit.Menu
 	recent  []string
+	shown   *Tab
+	swap    kit.Anim
 }
 
 func (w *workspace) current() *Tab {
@@ -396,8 +398,22 @@ func (w *workspace) layout(a *App, gtx C) D {
 
 	clear(t.rects)
 
-	if v := t.appear.Animate(gtx, 1, kit.Slow); v < 1 {
-		defer paint.PushOpacity(gtx.Ops, v).Pop()
+	if w.shown != t {
+		if w.shown != nil {
+			w.swap.Set(0)
+		}
+
+		w.shown = t
+	}
+
+	fade := 0.35 + 0.65*w.swap.Animate(gtx, 1, kit.Normal)
+	v := t.appear.Animate(gtx, 1, kit.Slow)
+
+	if o := fade * v; o < 1 {
+		defer paint.PushOpacity(gtx.Ops, max(o, 0.02)).Pop()
+	}
+
+	if v < 1 {
 		defer op.Offset(image.Pt(0, int((1-v)*float32(gtx.Dp(12))))).Push(gtx.Ops).Pop()
 	}
 
@@ -488,11 +504,7 @@ func (w *workspace) layoutNode(a *App, gtx C, t *Tab, n *node, origin image.Poin
 		t.rects[n.pane] = image.Rectangle{Min: origin, Max: origin.Add(size)}
 		dims := n.pane.view.Layout(gtx)
 
-		if n.pane.isConnecting() {
-			a.connectingView(gtx, n.pane)
-		} else {
-			n.pane.connecting.start = time.Time{}
-		}
+		a.paneOverlay(gtx, n.pane)
 
 		if t.root != n && t.active != n.pane {
 			kit.Rect(gtx, image.Rectangle{Max: size}, a.th().Dim)

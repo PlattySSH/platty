@@ -418,6 +418,10 @@ func (k *Kit) Dialog(gtx C, d *Dialog, o DialogOpts) bool {
 	}
 
 	t := d.appear.Animate(gtx, 1, Normal)
+
+	if k.Exit > 0 {
+		t = k.Exit * k.Exit
+	}
 	Rect(gtx, image.Rectangle{Max: size}, Fade(th.Scrim, t))
 
 	area := clip.Rect{Max: size}.Push(gtx.Ops)
@@ -438,10 +442,10 @@ func (k *Kit) Dialog(gtx C, d *Dialog, o DialogOpts) bool {
 		rec := op.Record(gtx.Ops)
 		dims := layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 			layout.Rigid(func(gtx C) D {
-				return layout.Inset{Left: 20, Right: 12, Top: 14, Bottom: 6}.Layout(gtx, func(gtx C) D {
+				return layout.Inset{Left: 24, Right: 14, Top: 18, Bottom: 4}.Layout(gtx, func(gtx C) D {
 					return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 						layout.Flexed(1, func(gtx C) D {
-							return k.Label(gtx, TextStyle{Size: th.TextSizeLarge, Weight: font.Medium}, o.Title)
+							return k.Label(gtx, TextStyle{Size: th.TextSizeLarge + 1, Weight: font.SemiBold}, o.Title)
 						}),
 						layout.Rigid(func(gtx C) D {
 							return k.IconButton(gtx, &d.close, icons.Close, false)
@@ -450,14 +454,14 @@ func (k *Kit) Dialog(gtx C, d *Dialog, o DialogOpts) bool {
 				})
 			}),
 			layout.Rigid(func(gtx C) D {
-				return layout.Inset{Left: 20, Right: 20, Top: 8, Bottom: 16}.Layout(gtx, o.Body)
+				return layout.Inset{Left: 24, Right: 24, Top: 10, Bottom: 18}.Layout(gtx, o.Body)
 			}),
 			layout.Rigid(func(gtx C) D {
 				if o.Footer == nil {
 					return D{}
 				}
 
-				return layout.Inset{Left: 20, Right: 20, Top: 4, Bottom: 16}.Layout(gtx, func(gtx C) D {
+				return layout.Inset{Left: 24, Right: 24, Top: 4, Bottom: 20}.Layout(gtx, func(gtx C) D {
 					return layout.E.Layout(gtx, o.Footer)
 				})
 			}),
@@ -465,8 +469,8 @@ func (k *Kit) Dialog(gtx C, d *Dialog, o DialogOpts) bool {
 		call := rec.Stop()
 
 		center := f32.Pt(float32(dims.Size.X)/2, float32(dims.Size.Y)/2)
-		s := 0.98 + 0.02*t
-		tr := f32.Affine2D{}.Scale(center, f32.Pt(s, s)).Offset(f32.Pt(0, 6*(1-t)))
+		s := 0.95 + 0.05*t
+		tr := f32.Affine2D{}.Scale(center, f32.Pt(s, s)).Offset(f32.Pt(0, float32(gtx.Dp(10))*(1-t)))
 		aff := op.Affine(tr).Push(gtx.Ops)
 		opacity := paint.PushOpacity(gtx.Ops, t)
 

@@ -177,6 +177,10 @@ func (t *tools) panel(a *App, gtx C, s core.Side) D {
 	outer := image.Pt(width, height)
 
 	defer clip.Rect{Max: outer}.Push(gtx.Ops).Pop()
+
+	if p := float32(width) / float32(full); p < 1 {
+		defer paint.PushOpacity(gtx.Ops, p*p).Pop()
+	}
 	panel := image.Rect(0, 0, full, height)
 
 	header := func(gtx C) D {

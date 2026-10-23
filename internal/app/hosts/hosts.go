@@ -437,7 +437,7 @@ func (p *Panel) hostRow(a core.Host, gtx C, h *vault.Host, depth int) D {
 		fg := kit.Lerp(kit.Lerp(th.TextMuted, th.Text, hv), th.Text, kit.B2F(selected))
 		return k.Row(gtx, r, kit.RowOpts{Selected: selected, Focused: true, Indent: indent}, func(gtx C) D {
 			return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-				layout.Rigid(func(gtx C) D { return icons.Terminal.Layout(gtx, 16, kit.Lerp(th.TextFaint, fg, hv)) }),
+				layout.Rigid(func(gtx C) D { return icons.Terminal.Layout(gtx, 16, kit.Lerp(th.TextMuted, fg, hv)) }),
 				layout.Rigid(kit.Gap(10)),
 				layout.Flexed(1, func(gtx C) D { return k.Label(gtx, kit.TextStyle{Color: fg}, h.Title()) }),
 				layout.Rigid(func(gtx C) D {

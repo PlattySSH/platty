@@ -135,15 +135,52 @@ func (k *Kit) Row(gtx C, r *Row, o RowOpts, w W) D {
 
 type ScrollList struct {
 	widget.List
+	last   layout.Position
+	moved  time.Time
+	inside bool
+	fade   Anim
 }
+
+const scrollLinger = 900 * time.Millisecond
 
 func (k *Kit) List(gtx C, l *ScrollList, n int, el layout.ListElement) D {
 	l.Axis = layout.Vertical
+
+	for {
+		ev, ok := gtx.Event(pointer.Filter{Target: l, Kinds: pointer.Enter | pointer.Leave | pointer.Move})
+
+		if !ok {
+			break
+		}
+
+		if e, ok := ev.(pointer.Event); ok {
+			l.inside = e.Kind != pointer.Leave
+		}
+	}
+
+	if p := l.Position; p.First != l.last.First || p.Offset != l.last.Offset {
+		l.last, l.moved = p, gtx.Now
+	}
+
+	recent := gtx.Now.Sub(l.moved) < scrollLinger
+
+	if recent {
+		gtx.Execute(op.InvalidateCmd{At: l.moved.Add(scrollLinger)})
+	}
+
+	a := l.fade.Animate(gtx, B2F(l.inside || recent), Normal)
+
+	area := clip.Rect{Max: gtx.Constraints.Max}.Push(gtx.Ops)
+	event.Op(gtx.Ops, l)
+
 	st := material.List(k.Mat, &l.List)
-	st.Indicator.Color = theme.WithAlpha(k.Th.TextFaint, 0x66)
-	st.Indicator.HoverColor = theme.WithAlpha(k.Th.TextFaint, 0xaa)
-	st.Indicator.MinorWidth = 6
-	st.Indicator.CornerRadius = 3
+	st.Indicator.Color = theme.WithAlpha(k.Th.TextFaint, uint8(0x60*a))
+	st.Indicator.HoverColor = theme.WithAlpha(k.Th.TextMuted, uint8(0xa0*a))
+	st.Indicator.MinorWidth = 4
+	st.Indicator.CornerRadius = 2
+	st.Track.MinorPadding = 2
 	st.AnchorStrategy = material.Overlay
-	return st.Layout(gtx, n, el)
+	dims := st.Layout(gtx, n, el)
+	area.Pop()
+	return dims
 }

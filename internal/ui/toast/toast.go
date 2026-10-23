@@ -36,6 +36,9 @@ type toast struct {
 	message string
 	born    time.Time
 	close   widget.Clickable
+	act     widget.Clickable
+	label   string
+	action  func()
 	appear  kit.Anim
 }
 
@@ -46,8 +49,12 @@ type Stack struct {
 }
 
 func (t *Stack) push(kind toastKind, title, message string) {
+	t.pushAction(kind, title, message, "", nil)
+}
+
+func (t *Stack) pushAction(kind toastKind, title, message, label string, action func()) {
 	t.mu.Lock()
-	it := &toast{kind: kind, title: title, message: message, born: time.Now()}
+	it := &toast{kind: kind, title: title, message: message, born: time.Now(), label: label, action: action}
 	it.appear.Set(0)
 	t.items = append(t.items, it)
 
@@ -69,13 +76,26 @@ func (t *Stack) Success(title, msg string) { t.push(toastSuccess, title, msg) }
 
 func (t *Stack) Error(title, msg string) { t.push(toastError, title, msg) }
 
+func (t *Stack) SuccessAction(title, msg, label string, fn func()) {
+	t.pushAction(toastSuccess, title, msg, label, fn)
+}
+
+func (t *Stack) ErrorAction(title, msg, label string, fn func()) {
+	t.pushAction(toastError, title, msg, label, fn)
+}
+
 func (t *Stack) Layout(gtx layout.Context, k *kit.Kit) {
 	t.mu.Lock()
 	now := time.Now()
 	var live []*toast
 
 	for _, it := range t.items {
-		if now.Sub(it.born) < toastLife && !it.close.Clicked(gtx) {
+		if it.act.Clicked(gtx) {
+			go it.action()
+			continue
+		}
+
+		if now.Sub(it.born) < it.life() && !it.close.Clicked(gtx) {
 			live = append(live, it)
 		}
 	}
@@ -88,7 +108,15 @@ func (t *Stack) Layout(gtx layout.Context, k *kit.Kit) {
 		return
 	}
 
-	gtx.Execute(op.InvalidateCmd{At: items[0].born.Add(toastLife)})
+	next := items[0].born.Add(items[0].life())
+
+	for _, it := range items[1:] {
+		if at := it.born.Add(it.life()); at.Before(next) {
+			next = at
+		}
+	}
+
+	gtx.Execute(op.InvalidateCmd{At: next})
 
 	th := k.Th
 	size := gtx.Constraints.Max
@@ -106,7 +134,7 @@ func (t *Stack) Layout(gtx layout.Context, k *kit.Kit) {
 
 			switch it.kind {
 			case toastSuccess:
-				ic, col = icons.Check, th.Text
+				ic, col = icons.Check, th.Success
 			case toastError:
 				ic, col = icons.Error, th.Danger
 			}
@@ -126,6 +154,15 @@ func (t *Stack) Layout(gtx layout.Context, k *kit.Kit) {
 
 							return layout.Inset{Top: 2}.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
 								return k.Label(gtx, kit.TextStyle{Color: th.TextMuted, Size: th.TextSizeSmall, MaxLines: 3}, it.message)
+							})
+						}),
+						layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+							if it.action == nil {
+								return layout.Dimensions{}
+							}
+
+							return layout.Inset{Top: 8}.Layout(gtx, func(gtx layout.Context) layout.Dimensions {
+								return k.Button(gtx, &it.act, kit.Secondary, nil, it.label)
 							})
 						}),
 					)
@@ -156,4 +193,12 @@ func (t *Stack) OnChange(fn func()) {
 	t.mu.Lock()
 	t.onChange = fn
 	t.mu.Unlock()
+}
+
+func (it *toast) life() time.Duration {
+	if it.action != nil {
+		return 2 * toastLife
+	}
+
+	return toastLife
 }

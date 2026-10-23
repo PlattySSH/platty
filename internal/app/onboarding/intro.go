@@ -408,7 +408,9 @@ func (d *Intro) content(gtx C, target spot) {
 
 	d.area = image.Rectangle{Min: image.Pt(x, y), Max: image.Pt(x, y).Add(dims.Size)}
 
-	defer paint.PushOpacity(gtx.Ops, e).Pop()
+	if e < 1 {
+		defer paint.PushOpacity(gtx.Ops, max(e, 0.01)).Pop()
+	}
 	defer op.Offset(image.Pt(x, y)).Push(gtx.Ops).Pop()
 	call.Add(gtx.Ops)
 }

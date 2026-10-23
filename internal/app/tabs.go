@@ -111,6 +111,15 @@ func (c *chrome) tabStrip(a *App, gtx C) D {
 		c.tabPos[tabs[i]] = p
 	}
 
+	if p, ok := pos[a.ws.active]; ok {
+		ax := int(k.Animated(gtx, kit.Key(&c.tabPos, 0), float32(p[0]), kit.Normal))
+		aw := int(k.Animated(gtx, kit.Key(&c.tabPos, 1), float32(p[1]), kit.Normal))
+		th0 := gtx.Dp(tabHeight)
+		st := op.Offset(image.Pt(ax, h-th0)).Push(gtx.Ops)
+		c.activeTab(a, gtx, aw, th0)
+		st.Pop()
+	}
+
 	for j, i := range visible {
 		p, ok := pos[i]
 
@@ -220,10 +229,20 @@ func (c *chrome) tab(a *App, gtx C, i, x, w int, active bool) {
 
 	hv := k.Hover(gtx, kit.Key(&t.row, 9), t.row.Hovered())
 
+	v := t.appear.Animate(gtx, 1, kit.Slow)
+
+	if t.closing {
+		v = min(v, t.vanish.Animate(gtx, 0, kit.Normal))
+	}
+
+	if v <= 0.01 {
+		return
+	}
+
+	defer clip.Rect{Max: size}.Push(gtx.Ops).Pop()
+
 	switch {
-	case active:
-		paint.FillShape(gtx.Ops, th.Editor, clip.Outline{Path: tabShape(gtx, image.Pt(w, th0+1))}.Op())
-	case hv > 0:
+	case !active && hv > 0:
 		r := image.Rect(gtx.Dp(3), gtx.Dp(4), w-gtx.Dp(3), th0-gtx.Dp(4))
 		kit.RRect(gtx, r, gtx.Dp(th.RadiusSmall), kit.Fade(th.Hover, hv*2))
 	}
@@ -235,13 +254,20 @@ func (c *chrome) tab(a *App, gtx C, i, x, w int, active bool) {
 	}
 
 	fg := kit.Lerp(kit.Lerp(th.TextMuted, th.Text, hv), th.Text, kit.B2F(active))
+	fg = kit.Fade(fg, v*v)
 
 	t.row.Layout(gtx, func(gtx C) D {
 		gtx.Constraints = layout.Exact(size)
 		layout.Inset{Left: 12, Right: 6}.Layout(gtx, func(gtx C) D {
 			return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 				layout.Rigid(func(gtx C) D { return c.tabIcon(a, gtx, t, fg) }),
-				layout.Rigid(kit.Gap(8)),
+				layout.Rigid(func(gtx C) D {
+					if !a.settings.TabIcons && !c.tabBusy(t) {
+						return D{}
+					}
+
+					return kit.Gap(8)(gtx)
+				}),
 				layout.Flexed(1, func(gtx C) D {
 					gtx.Constraints.Min.Y = th0
 					return layout.W.Layout(gtx, func(gtx C) D {
@@ -288,11 +314,40 @@ func (c *chrome) tabIcon(a *App, gtx C, t *Tab, fg color.NRGBA) D {
 		return D{Size: sz}
 	}
 
+	if !a.settings.TabIcons {
+		return D{}
+	}
+
 	if t.active.sess.Kind == session.SSH {
 		return icons.Server.Layout(gtx, 16, fg)
 	}
 
 	return icons.Terminal.Layout(gtx, 16, fg)
+}
+
+func (c *chrome) tabBusy(t *Tab) bool {
+	st, _ := t.active.sess.State()
+	return t.active.sess.Kind == session.SSH && (st == session.Connecting || st == session.Failed)
+}
+
+func (c *chrome) activeTab(a *App, gtx C, w, h int) {
+	if w < gtx.Dp(24) {
+		return
+	}
+
+	th := a.th()
+
+	switch a.settings.TabStyle {
+	case "pill":
+		in := gtx.Dp(4)
+		kit.RRect(gtx, image.Rect(gtx.Dp(2), in, w-gtx.Dp(2), h-in), (h-2*in)/2, th.Selection)
+	case "underline":
+		bar := gtx.Dp(2)
+		pad := gtx.Dp(10)
+		kit.RRect(gtx, image.Rect(pad, h-bar-gtx.Dp(2), w-pad, h-gtx.Dp(2)), bar/2, th.Accent)
+	default:
+		paint.FillShape(gtx.Ops, th.Editor, clip.Outline{Path: tabShape(gtx, image.Pt(w, h+1))}.Op())
+	}
 }
 
 func spinner(gtx C, px int, c color.NRGBA, now time.Time) {
