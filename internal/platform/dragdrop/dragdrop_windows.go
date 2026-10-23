@@ -26,25 +26,23 @@ var (
 	dropTarget   func(paths []string)
 )
 
-func Enable(hwnd uintptr, onDrop func(paths []string)) {
+func Enable(hwnd uintptr, onDrop func(paths []string), onHover func(over bool)) {
 	if hwnd == 0 || dropTarget != nil {
 		return
 	}
 
-	dropTarget = onDrop
+	dropTarget, hoverTarget = onDrop, onHover
+
+	if registerTarget(hwnd) {
+		return
+	}
+
 	procDragAccept.Call(hwnd, 1)
 	procSetSubclass.Call(hwnd, dropCallback, dropSubclassID, 0)
 }
 
-func dropProc(hwnd, msg, wParam, lParam, id, ref uintptr) uintptr {
-	if msg != wmDropFiles {
-		r, _, _ := procDefSubclass.Call(hwnd, msg, wParam, lParam)
-		return r
-	}
-
-	hdrop := wParam
+func queryFiles(hdrop uintptr) []string {
 	n, _, _ := procDragQueryFile.Call(hdrop, dragQueryCount, 0, 0)
-
 	paths := make([]string, 0, n)
 
 	for i := uintptr(0); i < n; i++ {
@@ -54,7 +52,17 @@ func dropProc(hwnd, msg, wParam, lParam, id, ref uintptr) uintptr {
 		paths = append(paths, windows.UTF16ToString(buf))
 	}
 
-	procDragFinish.Call(hdrop)
+	return paths
+}
+
+func dropProc(hwnd, msg, wParam, lParam, id, ref uintptr) uintptr {
+	if msg != wmDropFiles {
+		r, _, _ := procDefSubclass.Call(hwnd, msg, wParam, lParam)
+		return r
+	}
+
+	paths := queryFiles(wParam)
+	procDragFinish.Call(wParam)
 
 	if dropTarget != nil && len(paths) > 0 {
 		go dropTarget(paths)
