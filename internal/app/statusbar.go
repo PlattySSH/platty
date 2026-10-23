@@ -6,6 +6,7 @@ import (
 
 	"github.com/plattyssh/platty/internal/session"
 	"github.com/plattyssh/platty/internal/sshx"
+	"github.com/plattyssh/platty/internal/ui/metrics"
 )
 
 const statsEvery = 3 * time.Second
@@ -13,16 +14,17 @@ const statsEvery = 3 * time.Second
 type paneStats struct {
 	mu      sync.Mutex
 	st      sshx.Stats
+	hist    metrics.History
 	have    bool
 	err     error
 	running bool
 	seen    time.Time
 }
 
-func (s *paneStats) get() (sshx.Stats, bool, error) {
+func (s *paneStats) get() (sshx.Stats, metrics.History, bool, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	return s.st, s.have, s.err
+	return s.st, s.hist.Clone(), s.have, s.err
 }
 
 func (a *App) watchStats(p *Pane) {
@@ -54,6 +56,7 @@ func (a *App) watchStats(p *Pane) {
 
 			if err == nil {
 				ps.st, ps.have = st, true
+				ps.hist.Push(st)
 			}
 
 			ps.err = err
@@ -99,10 +102,12 @@ func (c *chrome) statusBar(a *App, gtx C) D {
 		return D{}
 	}
 
-	if st, _ := p.sess.State(); st == session.Connected {
-		a.watchStats(p)
+	if st, _ := p.sess.State(); st != session.Connected {
+		return D{}
 	}
 
-	s, have, err := p.stats.get()
-	return c.metrics.Layout(gtx, a.kit, s, have, err)
+	a.watchStats(p)
+
+	s, hist, have, err := p.stats.get()
+	return c.metrics.Layout(gtx, a.kit, s, hist, have, err)
 }
