@@ -352,7 +352,7 @@ func (p *prompt) Layout(gtx C) bool {
 			)
 		}
 		opts.Footer = kit.Buttons(
-			func(gtx C) D { return k.Button(gtx, &p.cancel, kit.Secondary, nil, "Cancel") },
+			func(gtx C) D { return k.Button(gtx, &p.cancel, kit.Ghost, nil, "Cancel") },
 			func(gtx C) D { return k.Button(gtx, &p.ok, kit.Primary, nil, "OK") },
 		)
 
@@ -402,7 +402,7 @@ func (p *prompt) Layout(gtx C) bool {
 		}
 
 		opts.Footer = kit.Buttons(
-			func(gtx C) D { return k.Button(gtx, &p.cancel, kit.Secondary, nil, "Cancel") },
+			func(gtx C) D { return k.Button(gtx, &p.cancel, kit.Ghost, nil, "Cancel") },
 			func(gtx C) D { return k.Button(gtx, &p.ok, kind, icons.Shield, label) },
 		)
 	}

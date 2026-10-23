@@ -384,10 +384,30 @@ type Dialog struct {
 }
 
 type DialogOpts struct {
-	Title  string
-	Width  unit.Dp
-	Body   W
-	Footer W
+	Title    string
+	Subtitle string
+	Width    unit.Dp
+	Body     W
+	Footer   W
+}
+
+func (k *Kit) dialogTitle(gtx C, o DialogOpts, size unit.Sp) D {
+	th := k.Th
+
+	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+		layout.Rigid(func(gtx C) D {
+			return k.Label(gtx, TextStyle{Size: size, Weight: font.SemiBold}, o.Title)
+		}),
+		layout.Rigid(func(gtx C) D {
+			if o.Subtitle == "" {
+				return D{}
+			}
+
+			return layout.Inset{Top: 4}.Layout(gtx, func(gtx C) D {
+				return k.Label(gtx, TextStyle{Size: th.TextSizeSmall, Color: th.TextMuted, MaxLines: 3}, o.Subtitle)
+			})
+		}),
+	)
 }
 
 func (k *Kit) Dialog(gtx C, d *Dialog, o DialogOpts) bool {
@@ -445,7 +465,7 @@ func (k *Kit) Dialog(gtx C, d *Dialog, o DialogOpts) bool {
 				return layout.Inset{Left: 24, Right: 14, Top: 18, Bottom: 4}.Layout(gtx, func(gtx C) D {
 					return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 						layout.Flexed(1, func(gtx C) D {
-							return k.Label(gtx, TextStyle{Size: th.TextSizeLarge + 1, Weight: font.SemiBold}, o.Title)
+							return k.dialogTitle(gtx, o, th.TextSizeLarge+1)
 						}),
 						layout.Rigid(func(gtx C) D {
 							return k.IconButton(gtx, &d.close, icons.Close, false)
@@ -603,10 +623,10 @@ func (k *Kit) dockedDialog(gtx C, d *Dialog, o DialogOpts) D {
 	gtx.Constraints = layout.Exact(size)
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
-			return layout.Inset{Left: 12, Right: 4, Top: 4, Bottom: 8}.Layout(gtx, func(gtx C) D {
-				return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
+			return layout.Inset{Left: 12, Right: 4, Top: 4, Bottom: 16}.Layout(gtx, func(gtx C) D {
+				return layout.Flex{Alignment: layout.Start}.Layout(gtx,
 					layout.Flexed(1, func(gtx C) D {
-						return k.Label(gtx, TextStyle{Size: th.TextSizeLarge, Weight: font.SemiBold}, o.Title)
+						return k.dialogTitle(gtx, o, th.TextSizeLarge)
 					}),
 					layout.Rigid(func(gtx C) D {
 						return k.IconButtonSized(gtx, &d.close, icons.Close, false, 28, 16, th.TextMuted)

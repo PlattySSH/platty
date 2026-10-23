@@ -170,7 +170,7 @@ func (p *Panel) handleMenu(a core.Host) {
 	case snipMenuEdit:
 		a.OpenIn(p, NewEditor(a, s))
 	case snipMenuDelete:
-		a.Open(dialogs.NewConfirm(a.Kit(), "Delete snippet", "Delete “"+s.Label+"”?", "Delete", func() {
+		a.Open(dialogs.NewConfirm(a.Kit(), "Delete this snippet?", "“"+s.Label+"” will be removed from your snippets.", "Delete", func() {
 			a.Vault().DeleteSnippet(s.ID)
 		}))
 	}
@@ -193,6 +193,7 @@ func NewEditor(a core.Host, s vault.Snippet) *dialogs.Form {
 
 	f := dialogs.NewForm(a.Kit(), title, "Save", dialogs.NewField("Name", "Restart nginx", s.Label), cmd, shortcut, trigger)
 	f.Width = 520
+	f.Subtitle = "Run it from the snippets panel, its shortcut, or by typing its trigger in a terminal."
 	f.OnOK = func(v []string) bool {
 		s.Label = strings.TrimSpace(v[0])
 		s.Command = strings.TrimSpace(v[1])

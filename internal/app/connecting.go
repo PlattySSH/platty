@@ -145,7 +145,7 @@ func (a *App) connectingView(gtx C, p *Pane, t float64, opacity float32) {
 					return k.Label(gtx, kit.TextStyle{Size: th.TextSizeSmall, Color: th.TextMuted}, step+"  ·  "+strconv.Itoa(int(t))+" s")
 				}),
 				layout.Rigid(kit.Gap(18)),
-				layout.Rigid(func(gtx C) D { return k.Button(gtx, &cv.cancel, kit.Secondary, nil, "Cancel") }),
+				layout.Rigid(func(gtx C) D { return k.Button(gtx, &cv.cancel, kit.Ghost, nil, "Cancel") }),
 			)
 		})
 	gtx.Execute(op.InvalidateCmd{})

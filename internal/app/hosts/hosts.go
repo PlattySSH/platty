@@ -627,7 +627,7 @@ func (p *Panel) hostAction(a core.Host, gtx C, i int) {
 		gtx.Execute(clipboard.WriteCmd{Type: "application/text", Data: io.NopCloser(strings.NewReader(cmd))})
 		a.Toasts().Info("Copied", cmd)
 	case hostMenuDelete:
-		a.Open(dialogs.NewConfirm(a.Kit(), "Delete host", "Delete “"+h.Title()+"”? Its port forwarding rules will be deleted too.", "Delete", func() {
+		a.Open(dialogs.NewConfirm(a.Kit(), "Delete this host?", "“"+h.Title()+"” and its port forwarding rules will be removed.", "Delete", func() {
 			a.Vault().DeleteHost(h.ID)
 		}))
 	}
@@ -667,8 +667,8 @@ func (p *Panel) folderAction(a core.Host, i int) {
 			dest = "“" + vault.FolderName(parent) + "”"
 		}
 
-		msg := "Delete “" + vault.FolderName(path) + "” and its subfolders? Its hosts will move to " + dest + "."
-		a.Open(dialogs.NewConfirm(a.Kit(), "Delete folder", msg, "Delete", func() {
+		msg := "“" + vault.FolderName(path) + "” and its subfolders will be removed. Their hosts move to " + dest + "."
+		a.Open(dialogs.NewConfirm(a.Kit(), "Delete this folder?", msg, "Delete", func() {
 			a.Vault().DeleteFolder(path)
 		}))
 	}

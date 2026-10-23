@@ -8,6 +8,7 @@ import (
 	"gioui.org/unit"
 	"gioui.org/widget"
 
+	"github.com/plattyssh/platty/internal/ui/icons"
 	"github.com/plattyssh/platty/internal/ui/kit"
 )
 
@@ -53,10 +54,10 @@ func (d *Confirm) Layout(gtx C) bool {
 		Title: d.title,
 		Width: 420,
 		Body: func(gtx C) D {
-			return k.Label(gtx, kit.TextStyle{MaxLines: 5}, d.message)
+			return k.Label(gtx, kit.TextStyle{Color: k.Th.TextMuted, MaxLines: 6}, d.message)
 		},
 		Footer: kit.Buttons(
-			func(gtx C) D { return k.Button(gtx, &d.cancel, kit.Secondary, nil, "Cancel") },
+			func(gtx C) D { return k.Button(gtx, &d.cancel, kit.Ghost, nil, "Cancel") },
 			func(gtx C) D { return k.Button(gtx, &d.ok, kit.Danger, nil, d.action) },
 		),
 	})
@@ -69,6 +70,8 @@ type Field struct {
 	Multi  bool
 	Secret bool
 	Editor widget.Editor
+	reveal widget.Clickable
+	shown  bool
 }
 
 func NewField(label, hint, value string) *Field {
@@ -78,17 +81,18 @@ func NewField(label, hint, value string) *Field {
 }
 
 type Form struct {
-	k       *kit.Kit
-	title   string
-	action  string
-	Width   unit.Dp
-	fields  []*Field
-	Extra   func(gtx C) D
-	OnOK    func(values []string) bool
-	dlg     kit.Dialog
-	ok      widget.Clickable
-	cancel  widget.Clickable
-	focused bool
+	k        *kit.Kit
+	title    string
+	Subtitle string
+	action   string
+	Width    unit.Dp
+	fields   []*Field
+	Extra    func(gtx C) D
+	OnOK     func(values []string) bool
+	dlg      kit.Dialog
+	ok       widget.Clickable
+	cancel   widget.Clickable
+	focused  bool
 }
 
 func NewForm(k *kit.Kit, title, action string, fields ...*Field) *Form {
@@ -124,6 +128,17 @@ func (d *Form) Layout(gtx C) bool {
 	submit := d.ok.Clicked(gtx)
 
 	for _, f := range d.fields {
+		if f.reveal.Clicked(gtx) {
+			f.shown = !f.shown
+			f.Editor.Mask = '•'
+
+			if f.shown {
+				f.Editor.Mask = 0
+			}
+		}
+	}
+
+	for _, f := range d.fields {
 		for {
 			ev, ok := f.Editor.Update(gtx)
 
@@ -151,19 +166,32 @@ func (d *Form) Layout(gtx C) bool {
 	}
 
 	return k.Dialog(gtx, &d.dlg, kit.DialogOpts{
-		Title: d.title,
-		Width: d.Width,
+		Title:    d.title,
+		Subtitle: d.Subtitle,
+		Width:    d.Width,
 		Body: func(gtx C) D {
 			var children []layout.FlexChild
 
 			for _, f := range d.fields {
 				children = append(children, layout.Rigid(func(gtx C) D {
-					return layout.Inset{Bottom: 12}.Layout(gtx, func(gtx C) D {
+					return layout.Inset{Bottom: 16}.Layout(gtx, func(gtx C) D {
 						if f.Multi {
 							return d.multiField(gtx, f)
 						}
 
-						return k.LabeledField(gtx, f.Label, &f.Editor, kit.FieldOpts{Hint: f.Hint, Mono: f.Mono})
+						o := kit.FieldOpts{Hint: f.Hint, Mono: f.Mono}
+
+						if f.Secret {
+							ic := icons.Visibility
+
+							if f.shown {
+								ic = icons.VisibilityOff
+							}
+
+							o.Trailing = func(gtx C) D { return k.IconButtonSized(gtx, &f.reveal, ic, false, 22, 16, k.Th.TextMuted) }
+						}
+
+						return k.LabeledField(gtx, f.Label, &f.Editor, o)
 					})
 				}))
 			}
@@ -175,7 +203,7 @@ func (d *Form) Layout(gtx C) bool {
 			return layout.Flex{Axis: layout.Vertical}.Layout(gtx, children...)
 		},
 		Footer: kit.Buttons(
-			func(gtx C) D { return k.Button(gtx, &d.cancel, kit.Secondary, nil, "Cancel") },
+			func(gtx C) D { return k.Button(gtx, &d.cancel, kit.Ghost, nil, "Cancel") },
 			func(gtx C) D { return k.Button(gtx, &d.ok, kit.Primary, nil, d.action) },
 		),
 	})

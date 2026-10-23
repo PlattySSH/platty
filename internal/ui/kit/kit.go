@@ -243,7 +243,11 @@ func (k *Kit) Kbd(gtx C, s string) D {
 }
 
 func (k *Kit) SectionTitle(gtx C, s string) D {
-	return k.Label(gtx, TextStyle{Size: k.Th.TextSizeSmall, Color: k.Th.TextMuted, Weight: font.Medium}, strings.ToUpper(s))
+	if s != "" {
+		s = strings.ToUpper(s[:1]) + strings.ToLower(s[1:])
+	}
+
+	return k.Label(gtx, TextStyle{Size: k.Th.TextSizeSmall, Color: k.Th.TextMuted, Weight: font.SemiBold}, s)
 }
 
 func (k *Kit) ReadPointer(gtx C) {

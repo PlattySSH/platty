@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 
+	"gioui.org/font"
 	"gioui.org/layout"
 	"gioui.org/widget"
 
@@ -220,14 +221,22 @@ func (d *Dialog) dataPage(a core.Host, row func(string, layout.Widget) layout.Fl
 	s := &d.sec
 
 	item := func(clk *widget.Clickable, ic *icons.Icon, title, text string) layout.FlexChild {
-		return row(title, func(gtx C) D {
-			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-				layout.Rigid(func(gtx C) D {
-					return k.Label(gtx, kit.TextStyle{Size: th.TextSizeSmall, Color: th.TextMuted, MaxLines: 3}, text)
-				}),
-				layout.Rigid(kit.Gap(8)),
-				layout.Rigid(func(gtx C) D { return k.Button(gtx, clk, kit.Secondary, ic, title+"…") }),
-			)
+		return layout.Rigid(func(gtx C) D {
+			return layout.Inset{Bottom: 22}.Layout(gtx, func(gtx C) D {
+				return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
+					layout.Flexed(1, func(gtx C) D {
+						return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+							layout.Rigid(func(gtx C) D { return k.Label(gtx, kit.TextStyle{Weight: font.Medium}, title) }),
+							layout.Rigid(kit.Gap(4)),
+							layout.Rigid(func(gtx C) D {
+								return k.Label(gtx, kit.TextStyle{Size: th.TextSizeSmall, Color: th.TextMuted, MaxLines: 3}, text)
+							}),
+						)
+					}),
+					layout.Rigid(kit.Gap(24)),
+					layout.Rigid(func(gtx C) D { return k.Button(gtx, clk, kit.Secondary, ic, title+"…") }),
+				)
+			})
 		})
 	}
 
