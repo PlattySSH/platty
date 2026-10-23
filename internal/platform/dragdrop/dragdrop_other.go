@@ -4,7 +4,7 @@ package dragdrop
 
 import "errors"
 
-func Enable(hwnd uintptr, onDrop func(paths []string)) {}
+func Enable(hwnd uintptr, onDrop func(paths []string), onHover func(over bool)) {}
 
 func DragOut(paths []string) error {
 	return errors.ErrUnsupported
