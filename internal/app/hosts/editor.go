@@ -4,6 +4,7 @@ import (
 	"strconv"
 	"strings"
 
+	"gioui.org/font"
 	"gioui.org/io/key"
 	"gioui.org/layout"
 	"gioui.org/widget"
@@ -32,11 +33,13 @@ type Editor struct {
 	keyIDs  []string
 	jumpIDs []string
 
-	save, saveConnect, cancel widget.Clickable
-	invalid                   bool
-	keyMissing                bool
-	focused                   bool
-	list                      layout.List
+	save, saveConnect widget.Clickable
+	invalid           bool
+	keyMissing        bool
+	focused           bool
+	more              widget.Clickable
+	expanded          bool
+	list              layout.List
 }
 
 var authMethods = []string{vault.AuthPassword, vault.AuthKey, vault.AuthAgent}
@@ -99,6 +102,7 @@ func NewEditor(a core.Host, h vault.Host) *Editor {
 		}
 	}
 
+	e.expanded = h.Group != "" || len(h.Tags) > 0 || h.JumpID != "" || h.StartupCommand != "" || h.ForwardAgent
 	e.list.Axis = layout.Vertical
 	return e
 }
@@ -185,10 +189,6 @@ func (e *Editor) Layout(gtx C) bool {
 		return true
 	}
 
-	if e.cancel.Clicked(gtx) {
-		return true
-	}
-
 	if e.reveal.Clicked(gtx) {
 		e.showPass = !e.showPass
 		e.password.Mask = '•'
@@ -256,50 +256,59 @@ func (e *Editor) Layout(gtx C) bool {
 		jumpNames = append(jumpNames, "?")
 	}
 
-	row := func(label string, w layout.Widget) layout.FlexChild {
+	field := func(label string, w layout.Widget) layout.FlexChild {
 		return layout.Rigid(func(gtx C) D {
-			return layout.Inset{Bottom: 10}.Layout(gtx, func(gtx C) D {
-				return k.FormRow(gtx, label, dialogs.LabelWidth, w)
+			return layout.Inset{Bottom: 12}.Layout(gtx, func(gtx C) D {
+				return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+					layout.Rigid(func(gtx C) D {
+						if label == "" {
+							return D{}
+						}
+
+						return layout.Inset{Bottom: 6}.Layout(gtx, func(gtx C) D {
+							return k.Label(gtx, kit.TextStyle{Size: th.TextSizeSmall, Color: th.TextMuted, Weight: font.Medium}, label)
+						})
+					}),
+					layout.Rigid(w),
+				)
 			})
 		})
 	}
 
-	section := func(label string) layout.FlexChild {
+	card := func(_ string, rows ...layout.FlexChild) layout.FlexChild {
 		return layout.Rigid(func(gtx C) D {
-			return layout.Inset{Top: 6, Bottom: 10}.Layout(gtx, func(gtx C) D {
-				return k.SectionTitle(gtx, label)
+			return layout.Inset{Bottom: 8}.Layout(gtx, func(gtx C) D {
+				return layout.Flex{Axis: layout.Vertical}.Layout(gtx, rows...)
 			})
 		})
 	}
 
-	children := []layout.FlexChild{
-		section("CONNECTION"),
-		row("Address", func(gtx C) D {
-			return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
+	if e.more.Clicked(gtx) {
+		e.expanded = !e.expanded
+	}
+
+	connection := card("Connection",
+		layout.Rigid(func(gtx C) D {
+			return layout.Flex{}.Layout(gtx,
 				layout.Flexed(1, func(gtx C) D {
-					return k.Field(gtx, &e.address, kit.FieldOpts{Hint: "example.com or 10.0.0.5", Invalid: e.invalid && strings.TrimSpace(e.address.Text()) == ""})
+					return layout.Flex{Axis: layout.Vertical}.Layout(gtx, field("Address", func(gtx C) D {
+						return k.Field(gtx, &e.address, kit.FieldOpts{Hint: "example.com or 10.0.0.5", Invalid: e.invalid && strings.TrimSpace(e.address.Text()) == ""})
+					}))
 				}),
 				layout.Rigid(kit.Gap(8)),
-				layout.Rigid(func(gtx C) D { return k.Muted(gtx, "Port") }),
-				layout.Rigid(kit.Gap(8)),
 				layout.Rigid(func(gtx C) D {
-					gtx.Constraints.Min.X = gtx.Dp(70)
-					gtx.Constraints.Max.X = gtx.Dp(70)
-					return k.Field(gtx, &e.port, kit.FieldOpts{Hint: "22"})
+					gtx.Constraints.Min.X, gtx.Constraints.Max.X = gtx.Dp(72), gtx.Dp(72)
+					return layout.Flex{Axis: layout.Vertical}.Layout(gtx, field("Port", func(gtx C) D {
+						return k.Field(gtx, &e.port, kit.FieldOpts{Hint: "22"})
+					}))
 				}),
 			)
 		}),
-		row("Label", func(gtx C) D { return k.Field(gtx, &e.label, kit.FieldOpts{Hint: "Display name (optional)"}) }),
-		row("Username", func(gtx C) D {
-			missing := e.invalid && strings.TrimSpace(e.user.Text()) == ""
-			field := k.Field(gtx, &e.user, kit.FieldOpts{Hint: "User to log in as, e.g. root", Invalid: missing})
-			return field
+		field("Username", func(gtx C) D {
+			return k.Field(gtx, &e.user, kit.FieldOpts{Hint: "e.g. root", Invalid: e.invalid && strings.TrimSpace(e.user.Text()) == ""})
 		}),
-		section("AUTHENTICATION"),
-		row("Method", func(gtx C) D {
-			return k.Segmented(gtx, &e.auth, []string{"Password", "SSH key", "Agent"})
-		}),
-	}
+		field("Label", func(gtx C) D { return k.Field(gtx, &e.label, kit.FieldOpts{Hint: "Display name (optional)"}) }),
+	)
 
 	if e.auth.Value == 1 && e.key.Value == 0 && len(e.keyIDs) > 1 {
 		e.key.Value = 1
@@ -309,9 +318,15 @@ func (e *Editor) Layout(gtx C) bool {
 		e.keyMissing = false
 	}
 
+	authRows := []layout.FlexChild{
+		field("Sign in with", func(gtx C) D {
+			return k.Segmented(gtx, &e.auth, []string{"Password", "SSH key", "Agent"})
+		}),
+	}
+
 	switch e.auth.Value {
 	case 0:
-		children = append(children, row("Password", func(gtx C) D {
+		authRows = append(authRows, field("Password", func(gtx C) D {
 			ic := icons.Visibility
 
 			if e.showPass {
@@ -326,9 +341,9 @@ func (e *Editor) Layout(gtx C) bool {
 			})
 		}))
 	case 1:
-		children = append(children, row("Key", func(gtx C) D {
+		authRows = append(authRows, field("Key", func(gtx C) D {
 			if len(keyNames) == 1 {
-				return k.Muted(gtx, "No keys yet: add them in Keychain (Alt+2).")
+				return k.Label(gtx, kit.TextStyle{Size: th.TextSizeSmall, Color: th.TextMuted, MaxLines: 2}, "No keys yet. Add one in Keychain (Alt+2).")
 			}
 
 			if !e.keyMissing {
@@ -337,51 +352,97 @@ func (e *Editor) Layout(gtx C) bool {
 
 			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 				layout.Rigid(func(gtx C) D { return k.Select(gtx, &e.key, keyNames) }),
-				layout.Rigid(kit.Gap(4)),
+				layout.Rigid(kit.Gap(6)),
 				layout.Rigid(func(gtx C) D {
-					return k.Label(gtx, kit.TextStyle{Size: th.TextSizeSmall, Color: th.Danger}, "Choose the key to use, or it will ask for a password.")
+					return k.Label(gtx, kit.TextStyle{Size: th.TextSizeSmall, Color: th.Danger}, "Choose the key to use.")
 				}),
 			)
 		}))
 	case 2:
-		children = append(children, row("", func(gtx C) D {
-			return k.Label(gtx, kit.TextStyle{Color: th.TextMuted, MaxLines: 2}, agentHint)
+		authRows = append(authRows, field("", func(gtx C) D {
+			return k.Label(gtx, kit.TextStyle{Size: th.TextSizeSmall, Color: th.TextMuted, MaxLines: 3}, agentHint)
 		}))
 	}
 
-	children = append(children,
-		row("Jump host", func(gtx C) D { return k.Select(gtx, &e.jump, jumpNames) }),
-		section("ORGANIZATION"),
-		row("Folder", func(gtx C) D {
-			return k.Field(gtx, &e.group, kit.FieldOpts{Hint: "Production/Web (/ creates subfolders)"})
-		}),
-		row("Tags", func(gtx C) D { return k.Field(gtx, &e.tags, kit.FieldOpts{Hint: "web, db (comma separated)"}) }),
-		section("ADVANCED"),
-		row("On connect", func(gtx C) D {
-			return k.Field(gtx, &e.startup, kit.FieldOpts{Hint: "Command to run, e.g. tmux attach", Mono: true})
-		}),
-		row("", func(gtx C) D {
-			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-				layout.Rigid(func(gtx C) D { return k.Checkbox(gtx, &e.forward, "Forward my SSH agent") }),
-				layout.Rigid(kit.Gap(4)),
-				layout.Rigid(func(gtx C) D {
-					return k.Label(gtx, kit.TextStyle{Size: th.TextSizeSmall, Color: th.TextMuted, MaxLines: 2}, "Lets this server use the keys in your local agent. Only turn it on for servers you trust.")
+	moreToggle := layout.Rigid(func(gtx C) D {
+		return layout.Inset{Bottom: 12}.Layout(gtx, func(gtx C) D {
+			return e.more.Layout(gtx, func(gtx C) D {
+				hv := k.Hover(gtx, kit.Key(&e.more, 0), e.more.Hovered())
+				fg := kit.Lerp(th.TextMuted, th.Text, hv)
+				ic := icons.ChevronRight
+
+				if e.expanded {
+					ic = icons.ExpandMore
+				}
+
+				return layout.Inset{Left: 4, Top: 4, Bottom: 4}.Layout(gtx, func(gtx C) D {
+					return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
+						layout.Rigid(func(gtx C) D { return ic.Layout(gtx, 16, fg) }),
+						layout.Rigid(kit.Gap(6)),
+						layout.Rigid(func(gtx C) D { return k.Label(gtx, kit.TextStyle{Color: fg, Weight: font.Medium}, "More options") }),
+					)
+				})
+			})
+		})
+	})
+
+	children := []layout.FlexChild{connection, card("Authentication", authRows...), moreToggle}
+
+	if e.expanded {
+		children = append(children,
+			card("Organization",
+				field("Folder", func(gtx C) D {
+					return k.Field(gtx, &e.group, kit.FieldOpts{Hint: "Production/Web"})
 				}),
-			)
-		}),
-	)
+				field("Tags", func(gtx C) D { return k.Field(gtx, &e.tags, kit.FieldOpts{Hint: "web, db"}) }),
+			),
+			card("Advanced",
+				field("Jump host", func(gtx C) D { return k.Select(gtx, &e.jump, jumpNames) }),
+				field("Run on connect", func(gtx C) D {
+					return k.Field(gtx, &e.startup, kit.FieldOpts{Hint: "e.g. tmux attach", Mono: true})
+				}),
+				field("", func(gtx C) D {
+					return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+						layout.Rigid(func(gtx C) D { return k.Checkbox(gtx, &e.forward, "Forward my SSH agent") }),
+						layout.Rigid(kit.Gap(4)),
+						layout.Rigid(func(gtx C) D {
+							return k.Label(gtx, kit.TextStyle{Size: th.TextSizeSmall, Color: th.TextMuted, MaxLines: 3}, "Lets this server use your local keys. Only for servers you trust.")
+						}),
+					)
+				}),
+			),
+		)
+	}
+
+	preview := strings.TrimSpace(e.user.Text())
+
+	if addr := strings.TrimSpace(e.address.Text()); addr != "" {
+		if preview != "" {
+			preview += "@"
+		}
+
+		preview += addr
+	}
 
 	closed := k.Dialog(gtx, &e.dlg, kit.DialogOpts{
 		Title: title,
 		Width: 560,
 		Body: func(gtx C) D {
 			return e.list.Layout(gtx, 1, func(gtx C, _ int) D {
-				return layout.Flex{Axis: layout.Vertical}.Layout(gtx, children...)
+				all := append([]layout.FlexChild{layout.Rigid(func(gtx C) D {
+					return layout.Inset{Bottom: 18}.Layout(gtx, func(gtx C) D {
+						if preview == "" {
+							return k.Label(gtx, kit.TextStyle{Size: th.TextSizeSmall, Color: th.TextFaint}, "Fill in the address and username to connect.")
+						}
+
+						return k.Label(gtx, kit.TextStyle{Size: th.TextSizeSmall, Color: th.TextMuted, Mono: true, MaxLines: 1}, preview)
+					})
+				})}, children...)
+				return layout.Flex{Axis: layout.Vertical}.Layout(gtx, all...)
 			})
 		},
 		Footer: kit.Buttons(
-			func(gtx C) D { return k.Button(gtx, &e.cancel, kit.Secondary, nil, "Cancel") },
-			func(gtx C) D { return k.Button(gtx, &e.save, kit.Secondary, nil, "Save") },
+			func(gtx C) D { return k.Button(gtx, &e.save, kit.Ghost, nil, "Save") },
 			func(gtx C) D { return k.Button(gtx, &e.saveConnect, kit.Primary, icons.Play, "Save and connect") },
 		),
 	})
