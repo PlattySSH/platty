@@ -36,6 +36,7 @@ type State struct {
 	Look   f32.Point
 	Blink  float32
 	Happy  float32
+	Sad    float32
 	Shadow bool
 }
 
@@ -140,6 +141,22 @@ func DrawEyes(ops *op.Ops, size float32, st State, c Colors) {
 		}
 
 		ry *= open
+		var lid clip.Stack
+
+		if st.Sad > 0 {
+			in, out := eye.X-sx*rx*2, eye.X+sx*rx*2
+			yIn, yOut := eye.Y-ry*(1-0.2*st.Sad), eye.Y-ry*(1-1.05*st.Sad)
+
+			var p clip.Path
+			p.Begin(ops)
+			p.MoveTo(f32.Pt(in, yIn))
+			p.LineTo(f32.Pt(out, yOut))
+			p.LineTo(f32.Pt(out, eye.Y+ry*2))
+			p.LineTo(f32.Pt(in, eye.Y+ry*2))
+			p.Close()
+			lid = clip.Outline{Path: p.End()}.Op().Push(ops)
+		}
+
 		deep := color.NRGBA{R: 0x3a, G: 0x3d, B: 0x4a, A: 0xff}
 		fillGradient(ops, ellipse(ops, eye.X, eye.Y, rx, ry), f32.Pt(0, eye.Y-ry), f32.Pt(0, eye.Y+ry), c.Ink, deep)
 		fillGradient(ops, ellipse(ops, eye.X-rx*0.1, eye.Y+ry*0.5, rx*0.62, ry*0.3),
@@ -147,9 +164,13 @@ func DrawEyes(ops *op.Ops, size float32, st State, c Colors) {
 			alpha(c.Shine, 0.28), alpha(c.Shine, 0))
 
 		if s >= 20 {
-			hr := s * 0.024 * twinkle
-			h := f32.Pt(eye.X+rx*0.36, eye.Y-ry*0.42)
+			hr := s * 0.024 * twinkle * (1 - 0.35*st.Sad)
+			h := f32.Pt(eye.X+rx*0.36, eye.Y-ry*0.42+ry*0.5*st.Sad)
 			fillEllipse(ops, c.Shine, h.X, h.Y, hr, hr*min(1, open*1.4))
+		}
+
+		if st.Sad > 0 {
+			lid.Pop()
 		}
 	}
 }
