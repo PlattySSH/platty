@@ -1,49 +1,15 @@
 package icons
 
 import (
-	"image/color"
 	"math"
 	"strconv"
 
 	"gioui.org/f32"
-	"gioui.org/op"
-	"gioui.org/op/clip"
-	"gioui.org/op/paint"
 )
 
 type segment struct {
 	kind byte
 	pts  [3]f32.Point
-}
-
-func phosphor(name string) *Icon {
-	d, ok := phosphorPaths[name]
-
-	if !ok {
-		panic("icons: no such icon " + name)
-	}
-
-	segs := parsePath(d)
-	return custom(func(ops *op.Ops, s float32, c color.NRGBA) {
-		k := s / 256
-		var p clip.Path
-		p.Begin(ops)
-
-		for _, sg := range segs {
-			switch sg.kind {
-			case 'M':
-				p.MoveTo(sg.pts[0].Mul(k))
-			case 'L':
-				p.LineTo(sg.pts[0].Mul(k))
-			case 'C':
-				p.CubeTo(sg.pts[0].Mul(k), sg.pts[1].Mul(k), sg.pts[2].Mul(k))
-			case 'Z':
-				p.Close()
-			}
-		}
-
-		paint.FillShape(ops, c, clip.Outline{Path: p.End()}.Op())
-	})
 }
 
 func parsePath(d string) []segment {

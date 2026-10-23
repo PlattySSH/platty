@@ -1,73 +1,80 @@
 package icons
 
 var (
-	Terminal = phosphor("regular-terminal-window")
+	Terminal = tabler("terminal-2")
+	Prompt   = tabler("terminal")
 
-	FolderOutline    = phosphor("regular-folder")
-	FolderFilled     = phosphor("fill-folder")
-	FolderOpen       = phosphor("regular-folder-open")
-	NewFolderOutline = phosphor("regular-folder-plus")
+	FolderOutline    = tabler("folder")
+	FolderFilled     = tablerFilled("folder")
+	FolderOpen       = tabler("folder-open")
+	NewFolderOutline = tabler("folder-plus")
 	Folder           = FolderOutline
 	NewFolder        = NewFolderOutline
 
-	PlusOutline = phosphor("regular-plus")
+	PlusOutline = tabler("plus")
 	Add         = PlusOutline
-	Close       = phosphor("regular-x")
-	Search      = phosphor("regular-magnifying-glass")
-	Settings    = phosphor("regular-gear")
-	Delete      = phosphor("regular-trash")
-	Edit        = phosphor("regular-pencil-simple")
-	Copy        = phosphor("regular-copy")
-	Paste       = phosphor("regular-clipboard")
+	Close       = tabler("x")
+	Search      = tabler("search")
+	Settings    = tabler("settings")
+	Delete      = tabler("trash")
+	Edit        = tabler("pencil")
+	Copy        = tabler("copy")
+	Paste       = tabler("clipboard")
 
-	ExpandMore   = phosphor("regular-caret-down")
-	ExpandLess   = phosphor("regular-caret-up")
-	ChevronRight = phosphor("regular-caret-right")
-	ArrowUp      = phosphor("regular-arrow-up")
-	ArrowRight   = phosphor("regular-arrow-right")
+	ExpandMore   = tabler("chevron-down")
+	ExpandLess   = tabler("chevron-up")
+	ChevronRight = tabler("chevron-right")
+	ArrowUp      = tabler("arrow-up")
+	ArrowRight   = tabler("arrow-right")
 	Launch       = ArrowRight
 
-	Refresh = phosphor("regular-arrow-clockwise")
-	Sync    = phosphor("regular-arrows-clockwise")
-	Check   = phosphor("regular-check")
+	Refresh = tabler("rotate-clockwise")
+	Sync    = tabler("refresh")
+	Check   = tabler("check")
 
-	Server = phosphor("regular-hard-drives")
+	Server = tabler("server")
 	Hosts  = Server
 
-	KeyOutline      = phosphor("regular-key")
+	KeyOutline      = tabler("key")
 	Key             = KeyOutline
-	ShieldOutline   = phosphor("regular-shield-check")
+	ShieldOutline   = tabler("shield-check")
 	Shield          = ShieldOutline
 	Fingerprint     = ShieldOutline
-	ArrowsOutline   = phosphor("regular-arrows-left-right")
+	ArrowsOutline   = tabler("arrows-left-right")
 	Forward         = ArrowsOutline
-	CodeOutline     = phosphor("regular-code")
+	CodeOutline     = tabler("code")
 	Snippet         = CodeOutline
-	SlidersOutline  = phosphor("regular-sliders-horizontal")
+	SlidersOutline  = tabler("adjustments-horizontal")
 	Tune            = SlidersOutline
-	HomeOutline     = phosphor("regular-house")
-	TransferOutline = phosphor("regular-arrows-down-up")
+	HomeOutline     = tabler("home")
+	TransferOutline = tabler("arrows-down-up")
 
-	Lock            = phosphor("regular-lock")
-	File            = phosphor("regular-file")
-	Upload          = phosphor("regular-upload-simple")
-	DownloadOutline = phosphor("regular-download-simple")
+	Lock            = tabler("lock")
+	File            = tabler("file")
+	FileImage       = tabler("photo")
+	FileArchive     = tabler("file-zip")
+	FileAudio       = tabler("file-music")
+	FileText        = tabler("file-text")
+	Link            = tabler("link")
+	CloudUpload     = tabler("cloud-upload")
+	Upload          = tabler("upload")
+	DownloadOutline = tabler("download")
 	Download        = DownloadOutline
 
-	Play          = phosphor("regular-play")
-	Info          = phosphor("regular-info")
-	Error         = phosphor("regular-warning-circle")
-	Visibility    = phosphor("regular-eye")
-	VisibilityOff = phosphor("regular-eye-slash")
-	SplitRight    = phosphor("regular-square-split-horizontal")
-	SplitDown     = phosphor("regular-square-split-vertical")
-	Keyboard      = phosphor("regular-keyboard")
+	Play          = tabler("player-play")
+	Info          = tabler("info-circle")
+	Error         = tabler("alert-circle")
+	Visibility    = tabler("eye")
+	VisibilityOff = tabler("eye-off")
+	SplitRight    = tabler("layout-columns")
+	SplitDown     = tabler("layout-rows")
+	Keyboard      = tabler("keyboard")
 )
 
 var (
-	CPU    = phosphor("regular-cpu")
-	Memory = phosphor("regular-memory")
-	Disk   = phosphor("regular-hard-drive")
-	Gauge  = phosphor("regular-gauge")
-	Clock  = phosphor("regular-clock")
+	CPU    = tabler("cpu")
+	Memory = tabler("cpu-2")
+	Disk   = tabler("database")
+	Gauge  = tabler("gauge")
+	Clock  = tabler("clock")
 )
